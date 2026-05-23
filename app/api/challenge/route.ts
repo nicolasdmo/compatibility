@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { computeCode } from '@/lib/scoring';
+
+// Unambiguous charset — no 0/O, 1/I/L confusion
+const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function randomCode(length: number): string {
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  }
+  return code;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { name, email, answers } = await req.json();
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ error: 'name es requerido' }, { status: 400 });
+    }
+    if (!answers || typeof answers !== 'object') {
+      return NextResponse.json({ error: 'answers es requerido' }, { status: 400 });
+    }
+
+    const archetype = computeCode(answers);
+    const db = getSupabaseAdmin();
+
+    // Retry loop — handles the rare UNIQUE collision on shortcode/owner_code
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const shortcode  = randomCode(5); // public  /r/AB12X
+      const ownerCode  = randomCode(7); // private /d/XYZ9999
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (db as any).from('challenges').insert({
+        shortcode,
+        owner_code:     ownerCode,
+        creator_name:   name.trim(),
+        creator_email:  email?.trim() || null,
+        answers,
+        archetype,
+      });
+
+      if (!error) {
+        return NextResponse.json({ shortcode, ownerCode });
+      }
+
+      // 23505 = Postgres unique_violation — retry with new codes
+      if (error.code !== '23505') {
+        console.error('[challenge POST]', error);
+        return NextResponse.json({ error: 'Error guardando el reto' }, { status: 500 });
+      }
+    }
+
+    return NextResponse.json({ error: 'No se pudo generar un código único' }, { status: 500 });
+  } catch (err) {
+    console.error('[challenge POST]', err);
+    return NextResponse.json({ error: 'Error inesperado' }, { status: 500 });
+  }
+}

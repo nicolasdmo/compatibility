@@ -3,9 +3,8 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { track } from '@vercel/analytics';
-import { useRouter } from 'next/navigation';
 import { QUESTIONS } from '@/data/questions';
-import { computeCode, computeScores, type Answers, type AnswerLetter } from '@/lib/scoring';
+import { computeCode, type Answers, type AnswerLetter } from '@/lib/scoring';
 
 const AXIS_LABELS: Record<string, string> = {
   E1: 'Energía',
@@ -14,8 +13,12 @@ const AXIS_LABELS: Record<string, string> = {
   E4: 'Estilo',
 };
 
-export default function TestRunner() {
-  const router   = useRouter();
+type Props = {
+  onComplete: (answers: Answers) => void;
+  eventName?: string;
+};
+
+export default function TestRunner({ onComplete, eventName = 'test_completed' }: Props) {
   const [current,   setCurrent]   = useState(0);
   const [answers,   setAnswers]   = useState<Answers>({});
   const [selected,  setSelected]  = useState<AnswerLetter | null>(null);
@@ -36,11 +39,9 @@ export default function TestRunner() {
 
       setTimeout(() => {
         if (isLast) {
-          const code   = computeCode(newAnswers);
-          const scores = computeScores(newAnswers);
-          try { localStorage.setItem('prisma_scores', JSON.stringify(scores)); } catch {}
-          track('test_completed', { code });
-          router.push(`/r/${code}`);
+          const code = computeCode(newAnswers);
+          track(eventName, { code });
+          onComplete(newAnswers);
         } else {
           setDirection(1);
           setCurrent((c) => c + 1);
@@ -48,7 +49,7 @@ export default function TestRunner() {
         }
       }, 380);
     },
-    [selected, answers, question.id, isLast, router]
+    [selected, answers, question.id, isLast, onComplete, eventName]
   );
 
   const handleBack = () => {
