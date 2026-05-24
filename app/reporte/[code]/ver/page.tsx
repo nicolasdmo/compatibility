@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { PREMIUM } from '@/data/premiumContent';
 import ExitoClient from '@/components/ExitoClient';
 
@@ -13,11 +14,11 @@ export default async function VerReportePage({ params, searchParams }: Props) {
   const { code }  = await params;
   const { token } = await searchParams;
 
-  const upper     = code?.toUpperCase();
-  const archetype = ARCHETYPES[upper];
-  const premium   = PREMIUM[upper];
+  const lower     = code?.toLowerCase();
+  const archetype = ARCHETYPES[lower as ArchetypeKey];
+  const premium   = PREMIUM[lower];
   if (!archetype || !premium) notFound();
-  if (!token) redirect(`/reporte/${upper}`);
+  if (!token) redirect(`/reporte/${lower}`);
 
   // Verify token in Supabase
   let paymentId = 'verified';
@@ -30,14 +31,14 @@ export default async function VerReportePage({ params, searchParams }: Props) {
       .eq('access_token', token)
       .single();
 
-    if (error || !data) redirect(`/reporte/${upper}?error=token`);
-    if (data.payment_status !== 'approved') redirect(`/reporte/${upper}?error=pago`);
-    if (data.archetype_code !== upper) redirect(`/reporte/${upper}?error=token`);
+    if (error || !data) redirect(`/reporte/${lower}?error=token`);
+    if (data.payment_status !== 'approved') redirect(`/reporte/${lower}?error=pago`);
+    if (data.archetype_code !== lower) redirect(`/reporte/${lower}?error=token`);
 
     paymentId = data.payment_id;
   } catch {
-    redirect(`/reporte/${upper}?error=token`);
+    redirect(`/reporte/${lower}?error=token`);
   }
 
-  return <ExitoClient code={upper} paymentId={paymentId} />;
+  return <ExitoClient code={lower} paymentId={paymentId} />;
 }

@@ -1,30 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { computeCode, isAPole, type Answers, type AnswerLetter } from '@/lib/scoring';
-import { QUESTIONS } from '@/data/questions';
+import {
+  computeArchetypeScores,
+  computeArchetypeKey,
+  computeMatchScore,
+  type Answers,
+} from '@/lib/scoring';
+import { resolveQuestions } from '@/lib/adaptive';
 
 type ChallengeRow = {
-  id:        string;
-  answers:   Record<string, string>;
-  archetype: string;
+  id:           string;
+  answers:      Record<string, string>;
+  question_ids: string[];
+  archetype:    string;
 };
-
-/**
- * Score: number of questions where A and B land on the same pole.
- * Pole-A = a or b. Pole-B = c or d.
- * Uses poles (not exact letters) because that's what the archetype is based on.
- */
-function computeScore(aAnswers: Answers, bAnswers: Answers): number {
-  let correct = 0;
-  for (const question of QUESTIONS) {
-    const aLetter = aAnswers[question.id] as AnswerLetter | undefined;
-    const bLetter = bAnswers[question.id] as AnswerLetter | undefined;
-    if (aLetter && bLetter && isAPole(aLetter) === isAPole(bLetter)) {
-      correct++;
-    }
-  }
-  return correct; // 0 – QUESTIONS.length (10)
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,14 +23,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
     }
 
-    const db  = getSupabaseAdmin();
+    const db    = getSupabaseAdmin();
     const upper = (shortcode as string).toUpperCase();
 
-    // Fetch the challenge by shortcode
+    // Fetch the challenge
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawChallenge, error: fetchErr } = await (db as any)
       .from('challenges')
-      .select('id, answers, archetype')
+      .select('id, answers, question_ids, archetype')
       .eq('shortcode', upper)
       .single();
 
@@ -50,8 +39,18 @@ export async function POST(req: NextRequest) {
     }
 
     const challenge = rawChallenge as ChallengeRow;
-    const score             = computeScore(challenge.answers as Answers, answers as Answers);
-    const guessedArchetype  = computeCode(answers as Answers);
+    const questions = resolveQuestions(challenge.question_ids ?? []);
+
+    // Score B vs A (exact same-letter match)
+    const score            = computeMatchScore(
+      challenge.answers as Answers,
+      answers as Answers,
+      challenge.question_ids ?? []
+    );
+    // Compute B's apparent archetype from their answers
+    const guessedScores    = computeArchetypeScores(answers as Answers, questions);
+    const guessedArchetype = computeArchetypeKey(guessedScores);
+    const total            = challenge.question_ids?.length ?? questions.length;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: attemptRow, error: insertErr } = await (db as any)
@@ -74,7 +73,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       attemptId:        (attemptRow as { id: string }).id,
       score,
-      total:            QUESTIONS.length,
+      total,
       ownerArchetype:   challenge.archetype,
       guessedArchetype,
     });

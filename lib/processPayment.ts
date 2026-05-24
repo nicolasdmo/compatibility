@@ -1,6 +1,7 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 
 export interface PaymentResult {
   email:           string;
@@ -33,11 +34,11 @@ export async function processApprovedPayment(paymentId: string): Promise<Payment
 
   const email         = data.payer?.email ?? '';
   const name          = data.payer?.first_name ?? '';
-  const archetypeCode = (data.external_reference ?? '').toUpperCase();
+  const archetypeCode = (data.external_reference ?? '').toLowerCase();
   const amount        = data.transaction_amount ?? 0;
   const currency      = data.currency_id ?? 'ARS';
 
-  if (!email || !archetypeCode || !ARCHETYPES[archetypeCode]) return null;
+  if (!email || !archetypeCode || !ARCHETYPES[archetypeCode as ArchetypeKey]) return null;
 
   // ── Idempotent upsert into purchases ──────────────────────────
   const supabase = getSupabaseAdmin();

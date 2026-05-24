@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { processApprovedPayment } from '@/lib/processPayment';
 
 interface Props {
@@ -15,8 +16,8 @@ interface Props {
 export default async function ExitoPage({ params, searchParams }: Props) {
   const { code } = await params;
   const sp       = await searchParams;
-  const upper    = code?.toUpperCase();
-  const archetype = ARCHETYPES[upper];
+  const lower     = code?.toLowerCase();
+  const archetype = ARCHETYPES[lower as ArchetypeKey];
   if (!archetype) notFound();
 
   // MP sometimes uses payment_id, sometimes collection_id
@@ -30,8 +31,8 @@ export default async function ExitoPage({ params, searchParams }: Props) {
   if (paymentId) {
     try {
       const result = await processApprovedPayment(paymentId);
-      if (result && result.archetypeCode === upper) {
-        redirectUrl = `/reporte/${upper}/ver?token=${result.accessToken}`;
+      if (result && result.archetypeCode === lower) {
+        redirectUrl = `/reporte/${lower}/ver?token=${result.accessToken}`;
       }
     } catch (err) {
       console.error('[exito] processPayment error:', err);
@@ -82,21 +83,21 @@ export default async function ExitoPage({ params, searchParams }: Props) {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
-              href={`/reporte/${upper}/exito${paymentId ? `?payment_id=${paymentId}` : ''}`}
-              className="inline-flex items-center gap-2 border border-line text-ink px-6 py-3 rounded-pill font-mono text-xs tracking-widest uppercase hover:bg-bg-elev transition-colors"
+              href={`/reporte/${lower}/exito${paymentId ? `?payment_id=${paymentId}` : ''}`}
+              className="inline-flex items-center gap-2 border border-line text-ink px-6 py-3 rounded-pill font-mono text-xs tracking-widest lowercase hover:bg-bg-elev transition-colors"
             >
               Refrescar
             </Link>
             <Link
-              href={`/r/${upper}`}
-              className="inline-flex items-center gap-2 bg-ink text-bg-card px-6 py-3 rounded-pill font-mono text-xs tracking-widest uppercase hover:opacity-80 transition-opacity"
+              href={`/r/${lower}`}
+              className="inline-flex items-center gap-2 bg-ink text-bg-card px-6 py-3 rounded-pill font-mono text-xs tracking-widest lowercase hover:opacity-80 transition-opacity"
             >
               Volver a mi resultado
             </Link>
           </div>
 
           <p className="font-mono text-[10px] text-ink-faint tracking-wider">
-            {archetype.emoji} {archetype.name} · {upper}
+            {archetype.emoji} {archetype.name} · {lower}
           </p>
         </div>
       </main>

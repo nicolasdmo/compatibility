@@ -3,16 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TestRunner from '@/components/TestRunner';
+import type { Question } from '@/data/questions';
 import type { Answers } from '@/lib/scoring';
 
 type Step = 'intro' | 'test' | 'submitting';
 
 type Props = {
-  shortcode:    string;
-  creatorName:  string;
+  shortcode:   string;
+  creatorName: string;
+  questions:   Question[];
 };
 
-export default function ChallengeClient({ shortcode, creatorName }: Props) {
+export default function ChallengeClient({ shortcode, creatorName, questions }: Props) {
   const router = useRouter();
   const [step,        setStep]        = useState<Step>('intro');
   const [guesserName, setGuesserName] = useState('');
@@ -41,17 +43,19 @@ export default function ChallengeClient({ shortcode, creatorName }: Props) {
     }
   };
 
-  /* ── Test step ─────────────────────────────────────────────── */
+  /* ── Test step (B answers A's exact questions in fixed mode) ── */
   if (step === 'test') {
     return (
       <TestRunner
+        mode="fixed"
+        questions={questions}
         onComplete={handleTestComplete}
         eventName="challenge_answered"
       />
     );
   }
 
-  /* ── Submitting step ───────────────────────────────────────── */
+  /* ── Submitting ────────────────────────────────────────────── */
   if (step === 'submitting') {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -65,7 +69,7 @@ export default function ChallengeClient({ shortcode, creatorName }: Props) {
     );
   }
 
-  /* ── Intro step (default) ──────────────────────────────────── */
+  /* ── Intro (default) ───────────────────────────────────────── */
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
@@ -81,9 +85,11 @@ export default function ChallengeClient({ shortcode, creatorName }: Props) {
         </h1>
 
         <p className="text-ink-mute text-sm text-center mb-10 leading-relaxed">
-          Respondé estas 10 preguntas{' '}
-          <strong className="text-ink">pensando en {creatorName}</strong>.
-          El puntaje revela cuánto lo/la conocés de verdad.
+          Respondé{' '}
+          <strong className="text-ink">
+            {questions.length} preguntas pensando en {creatorName}
+          </strong>
+          . El puntaje revela cuánto lo/la conocés de verdad.
         </p>
 
         <form onSubmit={handleIntroSubmit} className="flex flex-col gap-4">
@@ -96,9 +102,7 @@ export default function ChallengeClient({ shortcode, creatorName }: Props) {
             className="w-full bg-bg-card border-2 border-line rounded-xl px-5 py-4 text-ink text-lg placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
           />
 
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <button
             type="submit"
@@ -113,7 +117,7 @@ export default function ChallengeClient({ shortcode, creatorName }: Props) {
         </form>
 
         <p className="mt-6 text-center font-mono text-xs text-ink-faint tracking-wider">
-          10 preguntas · 2 minutos · gratis
+          {questions.length} preguntas · ~3 minutos · gratis
         </p>
       </div>
     </main>

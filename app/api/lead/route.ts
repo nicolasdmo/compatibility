@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
-import { ARCHETYPE_CODES } from '@/data/archetypes';
+import { ARCHETYPE_KEYS } from '@/data/archetypes';
 
 const FAKE_DOMAINS  = ['ejemplo.com', 'test.com', 'prueba.com', 'fake.com', 'example.com', 'yopmail.com'];
 const FAKE_KEYWORDS = ['test', 'prueba', 'prisma', 'fake', 'admin'];
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email inválido.' }, { status: 400 });
     }
 
-    if (!ARCHETYPE_CODES.includes(archetypeCode)) {
+    if (!ARCHETYPE_KEYS.includes(archetypeCode.toLowerCase() as never)) {
       return NextResponse.json({ error: 'Código de arquetipo inválido.' }, { status: 400 });
     }
 

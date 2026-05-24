@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { track } from '@vercel/analytics';
 import Link from 'next/link';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { PREMIUM } from '@/data/premiumContent';
 import { PRICE_DISPLAY } from '@/lib/config';
 
@@ -37,8 +38,8 @@ function IncludedCard({ icon, title, items, color }: {
 // ── Main component ───────────────────────────────────────────────
 
 export default function ReporteClient({ code }: { code: string }) {
-  const archetype = ARCHETYPES[code.toUpperCase()];
-  const premium   = PREMIUM[code.toUpperCase()];
+  const archetype = ARCHETYPES[code as ArchetypeKey];
+  const premium   = PREMIUM[code];
   const [loading, setLoading] = useState(false);
 
   if (!archetype || !premium) {
@@ -86,7 +87,7 @@ export default function ReporteClient({ code }: { code: string }) {
         </Link>
         <div className="flex items-center gap-2">
           <span className="text-xl">{archetype.emoji}</span>
-          <span className="font-mono text-xs tracking-wider" style={{ color: archetype.color }}>{archetype.code}</span>
+          <span className="font-mono text-xs tracking-wider" style={{ color: archetype.color }}>{archetype.key.toUpperCase()}</span>
         </div>
       </div>
 

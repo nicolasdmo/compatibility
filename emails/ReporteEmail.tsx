@@ -3,6 +3,7 @@ import {
   Heading, Text, Link, Hr, Preview,
 } from '@react-email/components';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { PREMIUM }    from '@/data/premiumContent';
 
 interface Props {
@@ -15,7 +16,7 @@ const font = "'Georgia', 'Times New Roman', serif";
 const mono = "'Courier New', Courier, monospace";
 
 export default function ReporteEmail({ code, accessToken, baseUrl }: Props) {
-  const archetype = ARCHETYPES[code];
+  const archetype = ARCHETYPES[code as ArchetypeKey];
   const premium   = PREMIUM[code];
   if (!archetype || !premium) return null;
 
@@ -399,7 +400,7 @@ export default function ReporteEmail({ code, accessToken, baseUrl }: Props) {
           {/* ── Footer ── */}
           <Section style={{ padding: '24px 40px 40px', borderTop: '1px solid #2a2826', textAlign: 'center' }}>
             <Text style={{ fontFamily: mono, fontSize: 9, color: '#4a4540', margin: '0 0 6px', letterSpacing: 3, textTransform: 'uppercase' }}>
-              PRISMA · {archetype.code} · {archetype.name}
+              PRISMA · {archetype.key.toUpperCase()} · {archetype.name}
             </Text>
             <Text style={{ fontFamily: mono, fontSize: 9, color: '#3a3530', margin: 0, letterSpacing: 1 }}>
               Este reporte fue generado exclusivamente para vos.

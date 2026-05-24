@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { SITE_URL, PRICE_DISPLAY } from '@/lib/config';
 import CopyButton from '@/components/CopyButton';
 
@@ -73,7 +74,7 @@ export default async function DashboardPage({ params }: Props) {
     ? (allAttempts.reduce((s, a) => s + a.score, 0) / allAttempts.length).toFixed(1)
     : null;
 
-  const archetype = ARCHETYPES[challenge.archetype];
+  const archetype = ARCHETYPES[challenge.archetype as ArchetypeKey];
   const shareLink = `${SITE_URL}/r/${challenge.shortcode}`;
 
   return (

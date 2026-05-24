@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { PREMIUM, type PremiumContent } from '@/data/premiumContent';
 
 // ── Reused sub-components ────────────────────────────────────────
@@ -119,7 +120,7 @@ function CareerBlock({ premium, color }: { premium: PremiumContent; color: strin
 // ── Main ─────────────────────────────────────────────────────────
 
 export default function ExitoClient({ code, paymentId }: { code: string; paymentId: string }) {
-  const archetype = ARCHETYPES[code];
+  const archetype = ARCHETYPES[code as ArchetypeKey];
   const premium   = PREMIUM[code];
   const [copied,    setCopied]    = useState(false);
   const [reportUrl, setReportUrl] = useState('');

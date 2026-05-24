@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { computeCode } from '@/lib/scoring';
+import { computeArchetypeScores, computeArchetypeKey, type Answers } from '@/lib/scoring';
+import { resolveQuestions } from '@/lib/adaptive';
 
 // Unambiguous charset — no 0/O, 1/I/L confusion
 const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -15,7 +16,7 @@ function randomCode(length: number): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, answers } = await req.json();
+    const { name, email, answers, questionIds } = await req.json();
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json({ error: 'name es requerido' }, { status: 400 });
@@ -23,22 +24,28 @@ export async function POST(req: NextRequest) {
     if (!answers || typeof answers !== 'object') {
       return NextResponse.json({ error: 'answers es requerido' }, { status: 400 });
     }
+    if (!Array.isArray(questionIds) || questionIds.length === 0) {
+      return NextResponse.json({ error: 'questionIds es requerido' }, { status: 400 });
+    }
 
-    const archetype = computeCode(answers);
-    const db = getSupabaseAdmin();
+    const questions  = resolveQuestions(questionIds as string[]);
+    const scores     = computeArchetypeScores(answers as Answers, questions);
+    const archetype  = computeArchetypeKey(scores);
+    const db         = getSupabaseAdmin();
 
     // Retry loop — handles the rare UNIQUE collision on shortcode/owner_code
     for (let attempt = 0; attempt < 5; attempt++) {
-      const shortcode  = randomCode(5); // public  /r/AB12X
-      const ownerCode  = randomCode(7); // private /d/XYZ9999
+      const shortcode = randomCode(5); // public  /r/AB12X
+      const ownerCode = randomCode(7); // private /d/XYZ9999
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (db as any).from('challenges').insert({
         shortcode,
-        owner_code:     ownerCode,
-        creator_name:   name.trim(),
-        creator_email:  email?.trim() || null,
+        owner_code:    ownerCode,
+        creator_name:  name.trim(),
+        creator_email: email?.trim() || null,
         answers,
+        question_ids:  questionIds,
         archetype,
       });
 

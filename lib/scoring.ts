@@ -1,59 +1,65 @@
-import { QUESTIONS } from '@/data/questions';
+import type { ArchetypeKey, Question, QuestionOption } from '@/data/questions';
+import { ARCHETYPE_KEYS } from '@/data/archetypes';
 
-export type AnswerLetter = 'a' | 'b' | 'c' | 'd';
-export type Answers = Record<number, AnswerLetter>;
-
-/**
- * Maps a raw answer letter to a binary pole.
- * a | b  →  Pole-A  (Introspectivo / Sensitivo / Lógico / Planificador)
- * c | d  →  Pole-B  (Expresivo / iNtuitivo / Valores / Flexible)
- */
-export const isAPole = (letter: AnswerLetter): boolean =>
-  letter === 'a' || letter === 'b';
+export type Answers = Record<string, 'a' | 'b' | 'c' | 'd'>;
 
 /**
- * Given answers keyed by question id, compute the 4-letter archetype code.
- *
- * Axis  Pole-A  Pole-B
- * E1    I       E      (Introspectivo / Expresivo)
- * E2    S       N      (Sensitivo    / iNtuitivo)
- * E3    L       V      (Lógico       / Valores)
- * E4    P       F      (Planificador / Flexible)
- *
- * Majority wins: ≥ 3 out of 4 axis questions on Pole-A → Pole-A wins.
- * Tie (2–2) defaults to Pole-B.
+ * Compute cumulative archetype scores given a set of answers and the
+ * questions that were shown.
  */
-export function computeCode(answers: Answers): string {
-  const axes  = ['E1', 'E2', 'E3', 'E4'] as const;
-  const poleA = ['I', 'S', 'L', 'P'];
-  const poleB = ['E', 'N', 'V', 'F'];
+export function computeArchetypeScores(
+  answers: Answers,
+  questions: Question[]
+): Record<ArchetypeKey, number> {
+  const scores: Record<ArchetypeKey, number> = {
+    planificador: 0,
+    espontaneo:   0,
+    cuidador:     0,
+    directo:      0,
+    reflexivo:    0,
+    intenso:      0,
+  };
 
-  return axes
-    .map((axis, i) => {
-      const axisQs = QUESTIONS.filter((q) => q.axis === axis);
-      const aCount = axisQs.filter((q) => {
-        const ans = answers[q.id];
-        return ans !== undefined && isAPole(ans);
-      }).length;
-      // Strict majority → Pole A; ties go to Pole B (works for any axis length)
-      return aCount * 2 > axisQs.length ? poleA[i] : poleB[i];
-    })
-    .join('');
+  for (const question of questions) {
+    const letter = answers[question.id];
+    if (!letter) continue;
+    const opt = question.options.find((o) => o.letter === letter);
+    if (!opt) continue;
+    for (const [key, pts] of Object.entries(opt.scores)) {
+      scores[key as ArchetypeKey] += pts as number;
+    }
+  }
+
+  return scores;
 }
 
 /**
- * Returns per-axis A-pole percentage (0–100) — useful for result visualisation.
+ * Returns the archetype key with the highest score.
+ * Tie-breaks by order of ARCHETYPE_KEYS.
  */
-export function computeScores(answers: Answers): Record<string, number> {
-  const axes = ['E1', 'E2', 'E3', 'E4'] as const;
-  const scores: Record<string, number> = {};
-  for (const axis of axes) {
-    const axisQs = QUESTIONS.filter((q) => q.axis === axis);
-    const aCount = axisQs.filter((q) => {
-      const ans = answers[q.id];
-      return ans !== undefined && isAPole(ans);
-    }).length;
-    scores[axis] = Math.round((aCount / axisQs.length) * 100);
+export function computeArchetypeKey(scores: Record<ArchetypeKey, number>): ArchetypeKey {
+  let best: ArchetypeKey = ARCHETYPE_KEYS[0];
+  for (const key of ARCHETYPE_KEYS) {
+    if (scores[key] > scores[best]) best = key;
   }
-  return scores;
+  return best;
+}
+
+/**
+ * Score B's answers against A's:
+ * +1 point for each question where B picked the exact same option as A.
+ * Returns a number from 0 to the number of shared questions.
+ */
+export function computeMatchScore(
+  aAnswers: Answers,
+  bAnswers: Answers,
+  questionIds: string[]
+): number {
+  let correct = 0;
+  for (const id of questionIds) {
+    if (aAnswers[id] && bAnswers[id] && aAnswers[id] === bAnswers[id]) {
+      correct++;
+    }
+  }
+  return correct;
 }

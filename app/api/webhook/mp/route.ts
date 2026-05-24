@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     try {
       const resend    = new Resend(resendKey);
-      const archetype = ARCHETYPES[result.archetypeCode];
+      const archetype = ARCHETYPES[result.archetypeCode as keyof typeof ARCHETYPES];
 
       const html = await render(
         ReporteEmail({

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { SITE_URL } from '@/lib/config';
 
 type Props = {
@@ -64,8 +65,8 @@ export default async function MatchPage({ params }: Props) {
   const challenge = rawChallenge as ChallengeRow;
 
   const total            = 10;
-  const ownerArchetype   = ARCHETYPES[challenge.archetype];
-  const guessedArchetype = ARCHETYPES[attempt.perceived_archetype];
+  const ownerArchetype   = ARCHETYPES[challenge.archetype as ArchetypeKey];
+  const guessedArchetype = ARCHETYPES[attempt.perceived_archetype as ArchetypeKey];
   const archetypeMatch   = challenge.archetype === attempt.perceived_archetype;
   const verdict          = getVerdict(attempt.score, total);
   const challengeUrl     = `${SITE_URL}/r/${challenge.shortcode}`;

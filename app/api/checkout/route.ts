@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { ARCHETYPES } from '@/data/archetypes';
+import type { ArchetypeKey } from '@/data/questions';
 import { SITE_URL, PRICE_AMOUNT, PRICE_CURRENCY } from '@/lib/config';
 
 export async function POST(req: NextRequest) {
   try {
     const { code } = await req.json();
-    const upper = code?.toUpperCase();
-    const archetype = ARCHETYPES[upper];
+    const key       = (code as string)?.toLowerCase() as ArchetypeKey;
+    const archetype = ARCHETYPES[key];
 
     if (!archetype) {
       return NextResponse.json({ error: 'Arquetipo inválido' }, { status: 400 });
@@ -18,29 +19,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'MP no configurado' }, { status: 500 });
     }
 
-    const client = new MercadoPagoConfig({ accessToken });
+    const client     = new MercadoPagoConfig({ accessToken });
     const preference = new Preference(client);
 
     const result = await preference.create({
       body: {
         items: [
           {
-            id: `prisma-reporte-${upper}`,
-            title: `Reporte Completo PRISMA · ${archetype.name}`,
-            description: `Análisis profundo, lectura de sombra, guía de carrera y plan de acción — arquetipo ${upper}`,
-            quantity: 1,
-            unit_price: Number(process.env.MP_PRICE ?? PRICE_AMOUNT),
+            id:          `reporte-${key}`,
+            title:       `Reporte Completo · ${archetype.name}`,
+            description: `${archetype.tagline}`,
+            quantity:    1,
+            unit_price:  Number(process.env.MP_PRICE ?? PRICE_AMOUNT),
             currency_id: process.env.MP_CURRENCY ?? PRICE_CURRENCY,
           },
         ],
         back_urls: {
-          success: `${SITE_URL}/reporte/${upper}/exito`,
-          failure: `${SITE_URL}/reporte/${upper}?error=pago`,
-          pending: `${SITE_URL}/reporte/${upper}/pendiente`,
+          success: `${SITE_URL}/reporte/${key}/exito`,
+          failure: `${SITE_URL}/reporte/${key}?error=pago`,
+          pending: `${SITE_URL}/reporte/${key}/pendiente`,
         },
         auto_return: 'approved',
-        external_reference: upper,
-        statement_descriptor: 'PRISMA TEST',
+        external_reference: key,
+        statement_descriptor: '¿CUÁNTO ME CONOCÉS?',
       },
     });
 

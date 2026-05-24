@@ -19,7 +19,7 @@ export default function ShareCard({ archetype }: ShareCardProps) {
       const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2 });
       const link = document.createElement('a');
-      link.download = `prisma-${archetype.code.toLowerCase()}.png`;
+      link.download = `prisma-${archetype.key}.png`;
       link.href = dataUrl;
       link.click();
     } catch (e) {
@@ -36,7 +36,7 @@ export default function ShareCard({ archetype }: ShareCardProps) {
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2 });
       const res = await fetch(dataUrl);
       const blob = await res.blob();
-      const file = new File([blob], `prisma-${archetype.code.toLowerCase()}.png`, { type: 'image/png' });
+      const file = new File([blob], `prisma-${archetype.key}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: `Soy ${archetype.name}`, text: archetype.tagline });
         return;
@@ -86,7 +86,7 @@ export default function ShareCard({ archetype }: ShareCardProps) {
           <p
             className="text-white text-xs font-mono tracking-[0.2em] uppercase opacity-70 mb-1"
           >
-            PRISMA · {archetype.code}
+            PRISMA · {archetype.key.toUpperCase()}
           </p>
           <h3
             className="text-white text-2xl leading-tight mb-1"

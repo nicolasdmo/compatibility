@@ -9,10 +9,10 @@ type Step = 'name' | 'test' | 'submitting';
 
 export default function CrearFlow() {
   const router = useRouter();
-  const [step, setStep]     = useState<Step>('name');
-  const [name, setName]     = useState('');
-  const [email, setEmail]   = useState('');
-  const [error, setError]   = useState('');
+  const [step, setStep]   = useState<Step>('name');
+  const [name, setName]   = useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +20,7 @@ export default function CrearFlow() {
     setStep('test');
   };
 
-  const handleTestComplete = async (answers: Answers) => {
+  const handleTestComplete = async (answers: Answers, questionIds: string[]) => {
     setStep('submitting');
     try {
       const res = await fetch('/api/challenge', {
@@ -30,6 +30,7 @@ export default function CrearFlow() {
           name: name.trim(),
           email: email.trim() || null,
           answers,
+          questionIds,
         }),
       });
       if (!res.ok) throw new Error('Error');
@@ -43,7 +44,13 @@ export default function CrearFlow() {
 
   /* ── Test step ─────────────────────────────────────────────── */
   if (step === 'test') {
-    return <TestRunner onComplete={handleTestComplete} eventName="challenge_created" />;
+    return (
+      <TestRunner
+        mode="adaptive"
+        onComplete={handleTestComplete}
+        eventName="challenge_created"
+      />
+    );
   }
 
   /* ── Submitting step ───────────────────────────────────────── */
@@ -89,9 +96,7 @@ export default function CrearFlow() {
             className="w-full bg-bg-card border border-line rounded-xl px-5 py-3.5 text-ink text-sm placeholder:text-ink-faint focus:outline-none focus:border-ink-soft transition-colors"
           />
 
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <button
             type="submit"
@@ -106,7 +111,7 @@ export default function CrearFlow() {
         </form>
 
         <p className="mt-6 text-center font-mono text-xs text-ink-faint tracking-wider">
-          10 preguntas · 2 minutos · gratis
+          ~12 preguntas · 3 minutos · gratis
         </p>
       </div>
     </main>

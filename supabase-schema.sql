@@ -8,8 +8,9 @@ CREATE TABLE IF NOT EXISTS challenges (
   owner_code    TEXT UNIQUE NOT NULL,          -- link privado del dashboard: /d/XYZ999
   creator_name  TEXT NOT NULL,                 -- "Juan"
   creator_email TEXT,                          -- opcional, para notificarle por mail
-  answers       JSONB NOT NULL,                -- {"1":"a","2":"c",...}
-  archetype     TEXT NOT NULL,                 -- ISLP, ENVF, etc.
+  question_ids  JSONB NOT NULL DEFAULT '[]',    -- ["R1","V1","D1","G1","R3","V2",...]
+  answers       JSONB NOT NULL,                -- {"R1":"a","V1":"c",...}
+  archetype     TEXT NOT NULL,                 -- planificador, espontaneo, etc.
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
