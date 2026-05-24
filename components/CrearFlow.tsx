@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TestRunner from '@/components/TestRunner';
+import GradientOrbs from '@/components/GradientOrbs';
 import type { Answers } from '@/lib/scoring';
 
 type Step = 'name' | 'test' | 'submitting';
@@ -56,64 +57,92 @@ export default function CrearFlow() {
   /* ── Submitting step ───────────────────────────────────────── */
   if (step === 'submitting') {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-mono text-sm text-ink-mute tracking-wider">Guardando tu reto...</p>
-        </div>
-      </main>
+      <>
+        <GradientOrbs />
+        <main className="relative z-10 min-h-screen flex items-center justify-center px-6">
+          <div className="text-center">
+            <div className="relative w-20 h-20 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+              <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-r-transparent animate-spin"
+                style={{ borderBottomColor: '#FF006E', borderLeftColor: '#8338EC' }}
+              />
+            </div>
+            <p className="font-display text-2xl text-white mb-2">
+              Calculando tu arquetipo
+            </p>
+            <p className="font-mono text-xs text-white/40 tracking-wider uppercase">
+              Esto toma un segundo...
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
   /* ── Name step (default) ───────────────────────────────────── */
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <p className="eyebrow text-center mb-8">Crear mi reto</p>
+    <>
+      <GradientOrbs />
+      <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-10">
+        <div className="w-full max-w-md">
 
-        <h1
-          className="font-serif text-4xl sm:text-5xl text-ink text-center mb-10 leading-tight"
-          style={{ fontFamily: 'var(--font-serif)' }}
-        >
-          ¿Cómo<br />te llamás?
-        </h1>
+          <div className="text-center mb-8">
+            <div className="badge-live mb-6 inline-flex">
+              EMPEZAR · 2 MINUTOS
+            </div>
+            <h1 className="font-display text-5xl sm:text-6xl text-white leading-[0.95] mb-4">
+              ¿Cómo<br />
+              <span className="gradient-text">te llamás?</span>
+            </h1>
+            <p className="text-white/55 text-base">
+              Tu nombre aparece cuando alguien<br />
+              hace tu reto.
+            </p>
+          </div>
 
-        <form onSubmit={handleNameSubmit} className="flex flex-col gap-4">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Tu nombre"
-            autoFocus
-            className="w-full bg-bg-card border-2 border-line rounded-xl px-5 py-4 text-ink text-lg placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
-          />
+          <form onSubmit={handleNameSubmit} className="flex flex-col gap-4">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Tu nombre"
+              autoFocus
+              maxLength={40}
+              className="input-modern"
+            />
 
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Tu email (opcional, para notificaciones)"
-            className="w-full bg-bg-card border border-line rounded-xl px-5 py-3.5 text-ink text-sm placeholder:text-ink-faint focus:outline-none focus:border-ink-soft transition-colors"
-          />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email (opcional)"
+              className="input-modern !text-base"
+              style={{ paddingTop: 14, paddingBottom: 14 }}
+            />
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            {error && (
+              <p className="text-center text-sm font-medium" style={{ color: '#FF006E' }}>
+                {error}
+              </p>
+            )}
 
-          <button
-            type="submit"
-            disabled={!name.trim()}
-            className="btn-cta mt-2 inline-flex items-center justify-center gap-3 bg-ink text-bg-card px-8 py-4 rounded-pill text-sm font-mono tracking-widest uppercase disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-          >
-            Empezar el reto
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="opacity-70">
-              <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={!name.trim()}
+              className="btn-primary mt-2"
+            >
+              <span>Empezar el reto</span>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </form>
 
-        <p className="mt-6 text-center font-mono text-xs text-ink-faint tracking-wider">
-          ~12 preguntas · 3 minutos · gratis
-        </p>
-      </div>
-    </main>
+          <p className="mt-6 text-center font-mono text-[11px] text-white/40 tracking-wider uppercase">
+            12 preguntas · 2 minutos · gratis
+          </p>
+        </div>
+      </main>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
 import type { ArchetypeKey } from '@/data/questions';
 import { SITE_URL } from '@/lib/config';
+import GradientOrbs from '@/components/GradientOrbs';
 
 type Props = {
   params: Promise<{ attemptId: string }>;
@@ -24,13 +25,13 @@ type ChallengeRow = {
   shortcode:    string;
 };
 
-function getVerdict(score: number, total: number): { headline: string; sub: string } {
+function getVerdict(score: number, total: number): { headline: string; sub: string; emoji: string; color: string } {
   const pct = score / total;
-  if (pct >= 0.9) return { headline: 'Lo conocés muy bien',           sub: '¡Impresionante! Casi perfecto.' };
-  if (pct >= 0.7) return { headline: 'Lo conocés bastante',           sub: 'Te faltan algunos detalles.' };
-  if (pct >= 0.5) return { headline: 'Lo conocés un poco',            sub: 'Hay más por descubrir.' };
-  if (pct >= 0.3) return { headline: 'Todavía lo estás conociendo',   sub: 'Queda mucho por explorar juntos.' };
-  return           { headline: 'Casi no lo conocés',                  sub: '¿Son amigos? 😅' };
+  if (pct >= 0.9) return { headline: 'Lo conocés a fondo',            sub: '¡Casi perfecto! Pocos llegan acá.', emoji: '🔥', color: '#06FFA5' };
+  if (pct >= 0.7) return { headline: 'Lo conocés bastante',           sub: 'Te faltaron algunos detalles.',       emoji: '✨', color: '#FFBE0B' };
+  if (pct >= 0.5) return { headline: 'Lo conocés un poco',            sub: 'Hay más por descubrir.',              emoji: '🤔', color: '#FB5607' };
+  if (pct >= 0.3) return { headline: 'Recién lo estás conociendo',   sub: 'Queda mucho por explorar.',           emoji: '🌱', color: '#8338EC' };
+  return           { headline: 'Casi no lo conocés',                  sub: '¿Son amigos? 😅',                    emoji: '💀', color: '#FF006E' };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -42,7 +43,6 @@ export default async function MatchPage({ params }: Props) {
   const { attemptId } = await params;
   const db = getSupabaseAdmin();
 
-  // Fetch attempt
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawAttempt, error: aErr } = await (db as any)
     .from('attempts')
@@ -53,7 +53,6 @@ export default async function MatchPage({ params }: Props) {
   if (aErr || !rawAttempt) notFound();
   const attempt = rawAttempt as AttemptRow;
 
-  // Fetch challenge
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawChallenge, error: cErr } = await (db as any)
     .from('challenges')
@@ -73,125 +72,171 @@ export default async function MatchPage({ params }: Props) {
   const scorePct         = attempt.score / total;
 
   return (
-    <main className="min-h-screen flex flex-col">
-      <div className="flex-1 flex flex-col items-center px-6 pt-14 pb-16">
+    <>
+      <GradientOrbs />
 
-        {/* Eyebrow */}
-        <p className="eyebrow mb-10">Resultado</p>
+      <main className="relative z-10 flex flex-col min-h-screen">
 
-        {/* Score circle */}
-        <div className="relative w-36 h-36 mb-4">
-          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-            <circle cx="50" cy="50" r="44" fill="none" stroke="#E8E3D5" strokeWidth="6" />
-            <circle
-              cx="50" cy="50" r="44"
-              fill="none"
-              stroke="#16140F"
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 44}`}
-              strokeDashoffset={`${2 * Math.PI * 44 * (1 - scorePct)}`}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span
-              className="font-serif text-4xl text-ink leading-none"
-              style={{ fontFamily: 'var(--font-serif)' }}
-            >
-              {attempt.score}
-            </span>
-            <span className="font-mono text-[11px] text-ink-faint tracking-wider">/ {total}</span>
-          </div>
-        </div>
-
-        {/* Verdict */}
-        <h1
-          className="font-serif text-3xl sm:text-4xl text-ink text-center leading-snug mb-2"
-          style={{ fontFamily: 'var(--font-serif)' }}
-        >
-          {verdict.headline}
-        </h1>
-        <p className="text-ink-mute text-sm text-center mb-1">{verdict.sub}</p>
-        <p className="text-ink-faint text-xs text-center mb-10 font-mono tracking-wide">
-          {attempt.guesser_name} → {challenge.creator_name}
-        </p>
-
-        {/* Archetype comparison */}
-        {ownerArchetype && guessedArchetype && (
-          <div className="w-full max-w-sm bg-bg-card border border-line rounded-2xl overflow-hidden mb-8">
-            <div className="px-5 pt-5 pb-4 border-b border-line-soft">
-              <p className="eyebrow mb-3">Arquetipo real</p>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl mt-0.5">{ownerArchetype.emoji}</span>
-                <div>
-                  <p className="font-mono text-[10px] text-ink-faint tracking-wider uppercase mb-0.5">
-                    {challenge.creator_name} es
-                  </p>
-                  <p className="font-serif text-xl text-ink" style={{ fontFamily: 'var(--font-serif)' }}>
-                    {ownerArchetype.name}
-                  </p>
-                  <p className="text-ink-mute text-xs mt-0.5 leading-relaxed">
-                    {ownerArchetype.tagline}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="px-5 py-4">
-              <p className="eyebrow mb-3">Tu lectura</p>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl mt-0.5">{guessedArchetype.emoji}</span>
-                <div>
-                  <p className="font-mono text-[10px] text-ink-faint tracking-wider uppercase mb-0.5">
-                    Vos creíste que era
-                  </p>
-                  <p className="font-serif text-xl text-ink" style={{ fontFamily: 'var(--font-serif)' }}>
-                    {guessedArchetype.name}
-                  </p>
-                  <p className="text-ink-mute text-xs mt-0.5 leading-relaxed">
-                    {guessedArchetype.tagline}
-                  </p>
-                </div>
-              </div>
-
-              {archetypeMatch && (
-                <div className="mt-3 bg-ink/5 rounded-lg px-3 py-2">
-                  <p className="text-ink text-xs text-center font-mono tracking-wide">
-                    ✓ ¡Adivinaste el arquetipo exacto!
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* CTAs */}
-        <div className="w-full max-w-sm flex flex-col gap-3">
-          <a
-            href={challengeUrl}
-            className="inline-flex items-center justify-center gap-2 border border-line text-ink px-6 py-3.5 rounded-pill font-mono text-xs tracking-widest uppercase hover:bg-bg-elev transition-colors"
-          >
-            Yo también quiero hacer el test
-          </a>
-
-          <Link
-            href="/crear"
-            className="btn-cta inline-flex items-center justify-center gap-3 bg-ink text-bg-card px-8 py-4 rounded-pill text-sm font-mono tracking-widest uppercase"
-          >
-            Crear mi propio reto
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="opacity-70">
-              <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+        {/* NAV */}
+        <nav className="flex items-center justify-between px-5 sm:px-10 py-5">
+          <Link href="/" className="font-display text-xl gradient-text">
+            cuanto.me
           </Link>
-        </div>
-      </div>
+          <Link
+            href="/ranking"
+            className="text-white/70 hover:text-white text-sm font-medium transition-colors"
+          >
+            🏆 Ranking
+          </Link>
+        </nav>
 
-      {/* Footer */}
-      <footer className="py-6 px-6 border-t border-line-soft text-center">
-        <p className="font-mono text-xs text-ink-faint tracking-wider">
-          ¿CUÁNTO ME CONOCÉS? · {new Date().getFullYear()}
-        </p>
-      </footer>
-    </main>
+        <div className="flex-1 flex flex-col items-center px-5 sm:px-6 pt-6 pb-16 max-w-md mx-auto w-full">
+
+          {/* Header */}
+          <p className="eyebrow mb-2">Tu resultado</p>
+          <p className="font-mono text-xs text-white/40 tracking-wide mb-8 text-center">
+            {attempt.guesser_name} → {challenge.creator_name}
+          </p>
+
+          {/* Big Score Circle */}
+          <div className="relative w-52 h-52 mb-6 animate-pop-in">
+            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+              <defs>
+                <linearGradient id="grad-score" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stopColor={verdict.color} />
+                  <stop offset="100%" stopColor="#8338EC" />
+                </linearGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+              <circle
+                cx="50" cy="50" r="44"
+                fill="none"
+                stroke="url(#grad-score)"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 44}`}
+                strokeDashoffset={`${2 * Math.PI * 44 * (1 - scorePct)}`}
+                filter="url(#glow)"
+                style={{ transition: 'stroke-dashoffset 1s ease' }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span
+                className="font-display text-7xl leading-none tabular-nums"
+                style={{ color: verdict.color, textShadow: `0 0 24px ${verdict.color}` }}
+              >
+                {attempt.score}
+              </span>
+              <span className="font-mono text-xs text-white/40 tracking-wider mt-1">
+                de {total}
+              </span>
+            </div>
+          </div>
+
+          {/* Verdict */}
+          <div className="text-center mb-10">
+            <p className="text-3xl mb-3">{verdict.emoji}</p>
+            <h1 className="font-display text-4xl sm:text-5xl text-white leading-[0.95] mb-3">
+              {verdict.headline}
+            </h1>
+            <p className="text-white/60 text-base">{verdict.sub}</p>
+          </div>
+
+          {/* Archetype comparison */}
+          {ownerArchetype && guessedArchetype && (
+            <div className="card-glass w-full overflow-hidden mb-8">
+              {/* Real archetype */}
+              <div
+                className="px-5 py-5 border-b border-white/5 relative overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, ${ownerArchetype.color}15 0%, transparent 100%)`,
+                }}
+              >
+                <p className="eyebrow mb-3">Es realmente</p>
+                <div className="flex items-start gap-4">
+                  <span
+                    className="text-4xl mt-0.5 shrink-0"
+                    style={{ filter: `drop-shadow(0 0 12px ${ownerArchetype.color}88)` }}
+                  >
+                    {ownerArchetype.emoji}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-display text-2xl text-white mb-1">
+                      {ownerArchetype.name}
+                    </p>
+                    <p className="text-white/60 text-sm leading-relaxed">
+                      {ownerArchetype.tagline}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Your guess */}
+              <div className="px-5 py-5">
+                <p className="eyebrow mb-3">Tu lectura</p>
+                <div className="flex items-start gap-4">
+                  <span className="text-4xl mt-0.5 shrink-0 opacity-90">
+                    {guessedArchetype.emoji}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-display text-2xl text-white mb-1">
+                      {guessedArchetype.name}
+                    </p>
+                    <p className="text-white/60 text-sm leading-relaxed">
+                      {guessedArchetype.tagline}
+                    </p>
+                  </div>
+                </div>
+
+                {archetypeMatch && (
+                  <div
+                    className="mt-4 px-4 py-3 rounded-xl text-center"
+                    style={{
+                      background: 'rgba(6,255,165,0.1)',
+                      border: '1px solid rgba(6,255,165,0.3)',
+                    }}
+                  >
+                    <p className="text-sm font-semibold" style={{ color: '#06FFA5' }}>
+                      🎯 ¡Acertaste el arquetipo exacto!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* CTAs */}
+          <div className="w-full flex flex-col gap-3">
+            <Link href="/crear" className="btn-primary">
+              <span>Crear mi propio reto</span>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+
+            <a
+              href={challengeUrl}
+              className="btn-secondary"
+            >
+              Hacer el test de {challenge.creator_name} de nuevo
+            </a>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <footer className="py-6 px-6 border-t border-white/5 text-center">
+          <p className="font-mono text-xs text-white/30 tracking-wider">
+            cuanto.me · {new Date().getFullYear()}
+          </p>
+        </footer>
+      </main>
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TestRunner from '@/components/TestRunner';
+import GradientOrbs from '@/components/GradientOrbs';
 import type { Question } from '@/data/questions';
 import type { Answers } from '@/lib/scoring';
 
@@ -43,7 +44,7 @@ export default function ChallengeClient({ shortcode, creatorName, questions }: P
     }
   };
 
-  /* ── Test step (B answers A's exact questions in fixed mode) ── */
+  /* ── Test step ─────────────────────────────────────────────── */
   if (step === 'test') {
     return (
       <TestRunner
@@ -58,68 +59,83 @@ export default function ChallengeClient({ shortcode, creatorName, questions }: P
   /* ── Submitting ────────────────────────────────────────────── */
   if (step === 'submitting') {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-mono text-sm text-ink-mute tracking-wider">
-            Calculando tu resultado...
-          </p>
-        </div>
-      </main>
+      <>
+        <GradientOrbs />
+        <main className="relative z-10 min-h-screen flex items-center justify-center px-6">
+          <div className="text-center">
+            <div className="relative w-20 h-20 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+              <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-r-transparent animate-spin"
+                style={{ borderBottomColor: '#06FFA5', borderLeftColor: '#3A86FF' }}
+              />
+            </div>
+            <p className="font-display text-2xl text-white mb-2">
+              Calculando tu puntaje
+            </p>
+            <p className="font-mono text-xs text-white/40 tracking-wider uppercase">
+              ¿Cuánto lo conocés?
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
   /* ── Intro (default) ───────────────────────────────────────── */
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <p className="eyebrow text-center mb-8">
-          {creatorName} te desafió
-        </p>
+    <>
+      <GradientOrbs />
+      <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-10">
+        <div className="w-full max-w-md">
 
-        <h1
-          className="font-serif text-4xl sm:text-5xl text-ink text-center mb-5 leading-tight"
-          style={{ fontFamily: 'var(--font-serif)' }}
-        >
-          ¿Cuánto<br />me conocés?
-        </h1>
+          <div className="text-center mb-8">
+            <div className="badge-live mb-6 inline-flex">
+              {creatorName.toUpperCase()} TE DESAFIÓ
+            </div>
+            <h1 className="font-display text-5xl sm:text-6xl text-white leading-[0.95] mb-5">
+              ¿Cuánto<br />
+              <span className="gradient-text">me conocés?</span>
+            </h1>
+            <p className="text-white/65 text-base leading-relaxed">
+              Respondé <strong className="text-white">{questions.length} preguntas pensando en {creatorName}</strong>.<br />
+              Vemos qué tan bien lo/la conocés.
+            </p>
+          </div>
 
-        <p className="text-ink-mute text-sm text-center mb-10 leading-relaxed">
-          Respondé{' '}
-          <strong className="text-ink">
-            {questions.length} preguntas pensando en {creatorName}
-          </strong>
-          . El puntaje revela cuánto lo/la conocés de verdad.
-        </p>
+          <form onSubmit={handleIntroSubmit} className="flex flex-col gap-4">
+            <input
+              type="text"
+              value={guesserName}
+              onChange={(e) => setGuesserName(e.target.value)}
+              placeholder="Tu nombre"
+              autoFocus
+              maxLength={40}
+              className="input-modern"
+            />
 
-        <form onSubmit={handleIntroSubmit} className="flex flex-col gap-4">
-          <input
-            type="text"
-            value={guesserName}
-            onChange={(e) => setGuesserName(e.target.value)}
-            placeholder="Tu nombre"
-            autoFocus
-            className="w-full bg-bg-card border-2 border-line rounded-xl px-5 py-4 text-ink text-lg placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
-          />
+            {error && (
+              <p className="text-center text-sm font-medium" style={{ color: '#FF006E' }}>
+                {error}
+              </p>
+            )}
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <button
+              type="submit"
+              disabled={!guesserName.trim()}
+              className="btn-primary mt-2"
+            >
+              <span>Aceptar el reto</span>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={!guesserName.trim()}
-            className="btn-cta mt-2 inline-flex items-center justify-center gap-3 bg-ink text-bg-card px-8 py-4 rounded-pill text-sm font-mono tracking-widest uppercase disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-          >
-            Aceptar el reto
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="opacity-70">
-              <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </form>
-
-        <p className="mt-6 text-center font-mono text-xs text-ink-faint tracking-wider">
-          {questions.length} preguntas · ~3 minutos · gratis
-        </p>
-      </div>
-    </main>
+          <p className="mt-6 text-center font-mono text-[11px] text-white/40 tracking-wider uppercase">
+            {questions.length} preguntas · ~2 minutos · gratis
+          </p>
+        </div>
+      </main>
+    </>
   );
 }
