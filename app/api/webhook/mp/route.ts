@@ -42,7 +42,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // MP sends: { type: 'payment', data: { id: '...' } }
     if (body.type !== 'payment') {
       return NextResponse.json({ ok: true, skipped: 'not a payment event' });
     }
@@ -55,23 +54,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    // Verify with MP + upsert into purchases (idempotent)
     const result = await processApprovedPayment(paymentId);
     if (!result) {
       return NextResponse.json({ ok: true, skipped: 'not approved or invalid' });
     }
 
-    // Already processed by a previous call → don't re-send the email
     if (result.alreadyExisted) {
       return NextResponse.json({ ok: true, alreadyProcessed: true });
     }
 
-    // ── Optional: send confirmation email (fault-tolerant) ─────
-    // The user already has access via /reporte/[code]/exito → /ver?token=
-    // so email failures are non-fatal.
+    // ── Email (only for archetype reports for now) ─────────────
+    // Compatibility reports give instant access via the success redirect;
+    // we'll add an email template later when we have stronger demand signal.
+    if (result.productType !== 'archetype_report') {
+      return NextResponse.json({ ok: true, productType: result.productType });
+    }
+
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) {
-      console.log('[webhook/mp] Resend not configured — skipping email (user has access via redirect)');
+      console.log('[webhook/mp] Resend not configured — skipping email');
       return NextResponse.json({ ok: true, emailSkipped: 'no-resend-key' });
     }
 
@@ -87,25 +88,22 @@ export async function POST(req: NextRequest) {
         }) as React.ReactElement
       );
 
-      // Use the user's verified Resend domain when available.
-      // Falls back to onboarding@resend.dev which only works to the account owner.
       const fromAddr = process.env.RESEND_DOMAIN
-        ? `PRISMA <reporte@${process.env.RESEND_DOMAIN}>`
-        : 'PRISMA <onboarding@resend.dev>';
+        ? `cuanto.me <reporte@${process.env.RESEND_DOMAIN}>`
+        : 'cuanto.me <onboarding@resend.dev>';
 
       const { error: emailError } = await resend.emails.send({
         from:    fromAddr,
         to:      result.email,
-        subject: `Tu Reporte Completo · ${archetype.name} (${result.archetypeCode})`,
+        subject: `Tu Reporte Completo · ${archetype.name}`,
         html,
       });
 
       if (emailError) {
-        console.warn('[webhook/mp] Email send failed (non-fatal):', emailError);
+        console.warn('[webhook/mp] Email send failed:', emailError);
         return NextResponse.json({ ok: true, emailError: 'send-failed' });
       }
 
-      // Mark email_sent so we don't retry
       const supabase = getSupabaseAdmin();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
@@ -113,11 +111,10 @@ export async function POST(req: NextRequest) {
         .update({ email_sent: true })
         .eq('payment_id', paymentId);
 
-      console.log(`[webhook/mp] ✅ Email sent to ${result.email} for ${result.archetypeCode}`);
       return NextResponse.json({ ok: true });
 
     } catch (err) {
-      console.warn('[webhook/mp] Email send error (non-fatal):', err);
+      console.warn('[webhook/mp] Email send error:', err);
       return NextResponse.json({ ok: true, emailError: 'exception' });
     }
 

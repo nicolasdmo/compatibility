@@ -16,3 +16,7 @@ export const PRICE_CURRENCY = 'ARS';
 
 /** Human-readable price shown across the UI. */
 export const PRICE_DISPLAY = '$4.999';
+
+/** Compatibility A↔B report — low-ticket impulse buy at peak emotion. */
+export const COMPAT_PRICE_AMOUNT  = 1999;
+export const COMPAT_PRICE_DISPLAY = '$1.999';

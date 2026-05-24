@@ -5,6 +5,14 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
 import type { ArchetypeKey } from '@/data/questions';
 import { SITE_URL } from '@/lib/config';
+import { resolveQuestions } from '@/lib/adaptive';
+import {
+  computeDimensionScores,
+  computeOverallCompat,
+  compatVerdict,
+} from '@/lib/compatibility';
+import type { Answers } from '@/lib/scoring';
+import CompatPreview from '@/components/CompatPreview';
 import GradientOrbs from '@/components/GradientOrbs';
 
 type Props = {
@@ -17,12 +25,19 @@ type AttemptRow = {
   perceived_archetype: string;
   challenge_id:        string;
   guesser_name:        string;
+  answers:             Record<string, string>;
 };
 
 type ChallengeRow = {
   creator_name: string;
   archetype:    string;
   shortcode:    string;
+  answers:      Record<string, string>;
+  question_ids: string[];
+};
+
+type PurchaseRow = {
+  access_token: string;
 };
 
 function getVerdict(score: number, total: number): { headline: string; sub: string; emoji: string; color: string } {
@@ -43,27 +58,51 @@ export default async function MatchPage({ params }: Props) {
   const { attemptId } = await params;
   const db = getSupabaseAdmin();
 
+  // ── Attempt ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawAttempt, error: aErr } = await (db as any)
     .from('attempts')
-    .select('id, score, perceived_archetype, challenge_id, guesser_name')
+    .select('id, score, perceived_archetype, challenge_id, guesser_name, answers')
     .eq('id', attemptId)
     .single();
 
   if (aErr || !rawAttempt) notFound();
   const attempt = rawAttempt as AttemptRow;
 
+  // ── Challenge ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawChallenge, error: cErr } = await (db as any)
     .from('challenges')
-    .select('creator_name, archetype, shortcode')
+    .select('creator_name, archetype, shortcode, answers, question_ids')
     .eq('id', attempt.challenge_id)
     .single();
 
   if (cErr || !rawChallenge) notFound();
   const challenge = rawChallenge as ChallengeRow;
 
-  const total            = 10;
+  // ── Already-paid lookup (so we don't re-sell) ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawPurchase } = await (db as any)
+    .from('purchases')
+    .select('access_token')
+    .eq('attempt_id', attemptId)
+    .eq('product_type', 'compatibility_report')
+    .eq('payment_status', 'approved')
+    .maybeSingle();
+
+  const purchase = rawPurchase as PurchaseRow | null;
+
+  // ── Compute compatibility preview ──
+  const dimensions = computeDimensionScores(
+    challenge.answers as Answers,
+    attempt.answers   as Answers,
+    challenge.question_ids ?? []
+  );
+  const overall      = computeOverallCompat(dimensions);
+  const compatVerd   = compatVerdict(overall);
+
+  // ── Score verdict ──
+  const total            = challenge.question_ids?.length || 10;
   const ownerArchetype   = ARCHETYPES[challenge.archetype as ArchetypeKey];
   const guessedArchetype = ARCHETYPES[attempt.perceived_archetype as ArchetypeKey];
   const archetypeMatch   = challenge.archetype === attempt.perceived_archetype;
@@ -149,10 +188,47 @@ export default async function MatchPage({ params }: Props) {
             <p className="text-white/60 text-base">{verdict.sub}</p>
           </div>
 
+          {/* ── Compatibility CTA (the money-maker) ──────────────────────── */}
+          {purchase ? (
+            // Already bought — link to the unlocked report
+            <div className="card-glass w-full p-5 mb-8 text-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(6,255,165,0.10), rgba(58,134,255,0.10))',
+                borderColor: 'rgba(6,255,165,0.3)',
+              }}
+            >
+              <span className="badge-live mb-3 inline-flex">DESBLOQUEADO</span>
+              <h3 className="font-display text-2xl text-white mb-2">
+                Ya tenés tu reporte
+              </h3>
+              <p className="text-white/65 text-sm mb-4">
+                Compatibilidad real con {challenge.creator_name} lista para ver.
+              </p>
+              <Link
+                href={`/compat/${attemptId}?token=${purchase.access_token}`}
+                className="btn-lime w-full"
+              >
+                <span>Ver mi reporte completo</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </Link>
+            </div>
+          ) : (
+            // Not bought yet — show locked preview
+            <CompatPreview
+              attemptId={attemptId}
+              creatorName={challenge.creator_name}
+              guesserName={attempt.guesser_name}
+              overallScore={overall}
+              dimensions={dimensions}
+              verdictColor={compatVerd.color}
+            />
+          )}
+
           {/* Archetype comparison */}
           {ownerArchetype && guessedArchetype && (
             <div className="card-glass w-full overflow-hidden mb-8">
-              {/* Real archetype */}
               <div
                 className="px-5 py-5 border-b border-white/5 relative overflow-hidden"
                 style={{
@@ -178,7 +254,6 @@ export default async function MatchPage({ params }: Props) {
                 </div>
               </div>
 
-              {/* Your guess */}
               <div className="px-5 py-5">
                 <p className="eyebrow mb-3">Tu lectura</p>
                 <div className="flex items-start gap-4">
@@ -212,25 +287,20 @@ export default async function MatchPage({ params }: Props) {
             </div>
           )}
 
-          {/* CTAs */}
+          {/* Secondary CTAs */}
           <div className="w-full flex flex-col gap-3">
-            <Link href="/crear" className="btn-primary">
-              <span>Crear mi propio reto</span>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+            <Link href="/crear" className="btn-secondary">
+              Crear mi propio reto
             </Link>
-
             <a
               href={challengeUrl}
-              className="btn-secondary"
+              className="text-center text-white/40 hover:text-white/70 text-xs font-mono uppercase tracking-widest py-2 transition-colors"
             >
-              Hacer el test de {challenge.creator_name} de nuevo
+              ↺ Hacer el test de {challenge.creator_name} de nuevo
             </a>
           </div>
         </div>
 
-        {/* FOOTER */}
         <footer className="py-6 px-6 border-t border-white/5 text-center">
           <p className="font-mono text-xs text-white/30 tracking-wider">
             cuanto.me · {new Date().getFullYear()}
