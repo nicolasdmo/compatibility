@@ -29,8 +29,8 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-white/65 text-lg sm:text-xl max-w-md mb-10 leading-relaxed">
-            Hacé el test. Mandá el link.<br />
-            Descubrí <span className="text-white font-semibold">quién te conoce mejor.</span>
+            Hacé el test. Mandalo.<br />
+            Vas a saber <span className="text-white font-semibold">a quién le importás de verdad.</span>
           </p>
 
           {/* CTA */}
@@ -61,9 +61,9 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
-              { n: '01', emoji: '🧠', title: 'Hacés el test', text: 'Doce preguntas adaptadas a vos. Tu mapa interior queda guardado.', color: '#FF006E' },
-              { n: '02', emoji: '🔗', title: 'Mandás el link', text: 'A tu pareja, mejor amigo, hermana, mamá. A quien te animes.', color: '#8338EC' },
-              { n: '03', emoji: '🎯', title: 'Te adivinan', text: 'Contestan pensando en vos. Ves el puntaje y dónde se equivocaron.', color: '#06FFA5' },
+              { n: '01', emoji: '🧠', title: 'Vos contestás', text: 'Doce preguntas que te leen entero. Tu mapa queda guardado.', color: '#FF006E' },
+              { n: '02', emoji: '🔗', title: 'Mandás el link', text: 'Pareja. Mejor amiga. Hermano. Tu vieja. Al que te animes.', color: '#8338EC' },
+              { n: '03', emoji: '🎯', title: 'Te adivinan', text: 'Contestan pensando en vos. Ves el puntaje — y dónde se equivocaron feo.', color: '#06FFA5' },
             ].map(({ n, emoji, title, text, color }) => (
               <div
                 key={n}
@@ -120,8 +120,8 @@ export default function LandingPage() {
             <span className="gradient-text-hot">no siempre</span> es el que pensás.
           </h2>
           <p className="text-white/55 text-base sm:text-lg max-w-md mx-auto">
-            A veces sorprende. A veces duele. <br />
-            Siempre da para conversar.
+            A veces sorprende. A veces duele.<br />
+            Pero <span className="text-white font-semibold">siempre quedás sabiendo</span> algo nuevo.
           </p>
         </section>
 

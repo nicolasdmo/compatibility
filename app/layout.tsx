@@ -26,12 +26,12 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: '¿Cuánto me conocés? — El test viral',
+  title: '¿Cuánto me conocés? — A quién le importás de verdad',
   description:
-    'Hacé el test, mandale el link a quien quieras y descubrí cuánto te conoce de verdad. 12 preguntas, 2 minutos.',
+    'Hacé el test. Mandalo. Vas a saber quién te conoce, quién te escucha, y quién hace que crea que sí. 12 preguntas, 2 minutos.',
   openGraph: {
     title: '¿Cuánto me conocés?',
-    description: 'Retá a tu pareja, amigos o familia a adivinarte. Vemos quién te conoce de verdad.',
+    description: 'Tu pareja, tu mejor amigo, tu vieja. Vemos quién te conoce de verdad — y a quién le duele fallar.',
     type: 'website',
   },
 };
