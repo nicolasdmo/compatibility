@@ -28,11 +28,7 @@ export default async function CompatExitoPage({ params, searchParams }: Props) {
   if (paymentId) {
     try {
       const result = await processApprovedPayment(paymentId);
-      if (
-        result &&
-        result.productType === 'compatibility_report' &&
-        result.attemptId   === attemptId
-      ) {
+      if (result && result.attemptId === attemptId) {
         redirectUrl = `/compat/${attemptId}?token=${result.accessToken}`;
       }
     } catch (err) {
