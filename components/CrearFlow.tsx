@@ -1,19 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import TestRunner from '@/components/TestRunner';
 import GradientOrbs from '@/components/GradientOrbs';
+import GoogleSignInButton from '@/components/AuthButton';
+import { createClient } from '@/lib/supabase/client';
 import type { Answers } from '@/lib/scoring';
+import type { User } from '@supabase/supabase-js';
 
-type Step = 'name' | 'test' | 'submitting';
+type Step = 'auth' | 'name' | 'test' | 'submitting';
 
 export default function CrearFlow() {
   const router = useRouter();
-  const [step, setStep]   = useState<Step>('name');
-  const [name, setName]   = useState('');
+  const [step,  setStep]  = useState<Step>('auth');
+  const [user,  setUser]  = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [name,  setName]  = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+
+  // Check existing session on mount — if already logged in, skip auth step
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUser(data.user);
+        const displayName = data.user.user_metadata?.full_name?.split(' ')[0]
+                        ?? data.user.user_metadata?.name?.split(' ')[0]
+                        ?? '';
+        if (displayName) setName(displayName);
+        if (data.user.email) setEmail(data.user.email);
+        setStep('name');
+      }
+      setAuthChecked(true);
+    });
+  }, []);
+
+  const handleSkipAuth = () => {
+    setStep('name');
+  };
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +54,7 @@ export default function CrearFlow() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
+          name:  name.trim(),
           email: email.trim() || null,
           answers,
           questionIds,
@@ -43,7 +69,7 @@ export default function CrearFlow() {
     }
   };
 
-  /* ── Test step ─────────────────────────────────────────────── */
+  /* ── Test step ───────────────────────────────────────────── */
   if (step === 'test') {
     return (
       <TestRunner
@@ -54,7 +80,7 @@ export default function CrearFlow() {
     );
   }
 
-  /* ── Submitting step ───────────────────────────────────────── */
+  /* ── Submitting ──────────────────────────────────────────── */
   if (step === 'submitting') {
     return (
       <>
@@ -79,7 +105,67 @@ export default function CrearFlow() {
     );
   }
 
-  /* ── Name step (default) ───────────────────────────────────── */
+  /* ── Auth step (default) ─────────────────────────────────── */
+  if (step === 'auth') {
+    if (!authChecked) {
+      return (
+        <>
+          <GradientOrbs />
+          <main className="relative z-10 min-h-screen flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          </main>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <GradientOrbs />
+        <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-10">
+          <div className="w-full max-w-md">
+
+            <div className="text-center mb-10">
+              <div className="badge-live mb-6 inline-flex">
+                EMPEZAR · 2 MINUTOS
+              </div>
+              <h1 className="font-display text-5xl sm:text-6xl text-white leading-[0.95] mb-4">
+                Antes<br />
+                <span className="gradient-text">empezamos</span>
+              </h1>
+              <p className="text-white/55 text-base">
+                Guardá tu reto en tu cuenta para no perderlo.<br />
+                O segui anónimo si preferís.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <GoogleSignInButton redirectTo="/crear" />
+
+              <div className="flex items-center gap-3 my-2">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-white/35 text-xs font-mono uppercase tracking-wider">o</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              <button
+                onClick={handleSkipAuth}
+                className="text-white/65 hover:text-white text-sm font-medium py-3 transition-colors"
+              >
+                Seguir sin cuenta (anónimo)
+              </button>
+            </div>
+
+            <p className="mt-10 text-center font-mono text-[10px] text-white/30 tracking-wider uppercase leading-relaxed">
+              Solo guardamos tu email y nombre.<br />
+              Nunca vamos a postear en tu nombre.
+            </p>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  /* ── Name step ───────────────────────────────────────────── */
   return (
     <>
       <GradientOrbs />
@@ -88,7 +174,7 @@ export default function CrearFlow() {
 
           <div className="text-center mb-8">
             <div className="badge-live mb-6 inline-flex">
-              EMPEZAR · 2 MINUTOS
+              {user ? `HOLA ${(user.user_metadata?.full_name?.split(' ')[0] ?? '').toUpperCase()}` : 'CREAR RETO · 2 MIN'}
             </div>
             <h1 className="font-display text-5xl sm:text-6xl text-white leading-[0.95] mb-4">
               ¿Cómo<br />
@@ -111,14 +197,16 @@ export default function CrearFlow() {
               className="input-modern"
             />
 
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email (opcional)"
-              className="input-modern !text-base"
-              style={{ paddingTop: 14, paddingBottom: 14 }}
-            />
+            {!user && (
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email (opcional)"
+                className="input-modern !text-base"
+                style={{ paddingTop: 14, paddingBottom: 14 }}
+              />
+            )}
 
             {error && (
               <p className="text-center text-sm font-medium" style={{ color: '#FF006E' }}>

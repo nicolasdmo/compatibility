@@ -2,6 +2,7 @@ import Link from 'next/link';
 import GradientOrbs from '@/components/GradientOrbs';
 import LiveStats from '@/components/LiveStats';
 import RankingPreview from '@/components/RankingPreview';
+import Nav from '@/components/Nav';
 
 export default function LandingPage() {
   return (
@@ -10,26 +11,7 @@ export default function LandingPage() {
 
       <main className="relative z-10 flex flex-col min-h-screen">
 
-        {/* ── NAV ────────────────────────────────────────────── */}
-        <nav className="flex items-center justify-between px-5 sm:px-10 py-5">
-          <Link href="/" className="font-display text-xl gradient-text">
-            cuanto.me
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/ranking"
-              className="text-white/70 hover:text-white text-sm font-medium transition-colors"
-            >
-              🏆 Ranking
-            </Link>
-            <Link
-              href="/crear"
-              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-pill bg-white/8 border border-white/12 text-white text-sm font-semibold hover:bg-white/14 transition-colors"
-            >
-              Crear reto
-            </Link>
-          </div>
-        </nav>
+        <Nav />
 
         {/* ── HERO ───────────────────────────────────────────── */}
         <section className="flex flex-col items-center justify-center flex-1 px-6 pt-8 pb-16 text-center">

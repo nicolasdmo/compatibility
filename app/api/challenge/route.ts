@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { createClient } from '@/lib/supabase/server';
 import { computeArchetypeScores, computeArchetypeKey, type Answers } from '@/lib/scoring';
 import { resolveQuestions } from '@/lib/adaptive';
 
@@ -28,15 +29,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'questionIds es requerido' }, { status: 400 });
     }
 
-    const questions  = resolveQuestions(questionIds as string[]);
-    const scores     = computeArchetypeScores(answers as Answers, questions);
-    const archetype  = computeArchetypeKey(scores);
-    const db         = getSupabaseAdmin();
+    // Optional: attach the challenge to the signed-in user (Google OAuth flow)
+    let userId: string | null = null;
+    try {
+      const ssr = await createClient();
+      const { data: { user } } = await ssr.auth.getUser();
+      userId = user?.id ?? null;
+    } catch {
+      // anonymous flow — userId stays null
+    }
 
-    // Retry loop — handles the rare UNIQUE collision on shortcode/owner_code
+    const questions = resolveQuestions(questionIds as string[]);
+    const scores    = computeArchetypeScores(answers as Answers, questions);
+    const archetype = computeArchetypeKey(scores);
+    const db        = getSupabaseAdmin();
+
     for (let attempt = 0; attempt < 5; attempt++) {
-      const shortcode = randomCode(5); // public  /r/AB12X
-      const ownerCode = randomCode(7); // private /d/XYZ9999
+      const shortcode = randomCode(5);
+      const ownerCode = randomCode(7);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (db as any).from('challenges').insert({
@@ -47,13 +57,13 @@ export async function POST(req: NextRequest) {
         answers,
         question_ids:  questionIds,
         archetype,
+        user_id:       userId,
       });
 
       if (!error) {
         return NextResponse.json({ shortcode, ownerCode });
       }
 
-      // 23505 = Postgres unique_violation — retry with new codes
       if (error.code !== '23505') {
         console.error('[challenge POST]', error);
         return NextResponse.json({ error: 'Error guardando el reto' }, { status: 500 });
