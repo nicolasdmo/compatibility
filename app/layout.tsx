@@ -34,6 +34,11 @@ export const metadata: Metadata = {
     description: 'Tu pareja, tu mejor amigo, tu vieja. Vemos quién te conoce de verdad — y a quién le duele fallar.',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: '¿Cuánto me conocés?',
+    description: 'Tu pareja, tu mejor amigo, tu vieja. Vemos quién te conoce de verdad — y a quién le duele fallar.',
+  },
 };
 
 export default function RootLayout({

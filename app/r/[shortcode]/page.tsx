@@ -24,9 +24,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single();
 
   const name = (data as { creator_name: string } | null)?.creator_name ?? 'alguien';
+  const firstName = name.split(' ')[0];
+  const title = `¿Cuánto conocés a ${firstName}?`;
+  const description = `${firstName} te desafió. 12 preguntas, 2 minutos. Probá si lo conocés de verdad.`;
+
   return {
-    title: `¿Cuánto conocés a ${name}? — ¿Cuánto me conocés?`,
-    description: `${name} te desafió. Respondé ~12 preguntas pensando en ${name} y descubrí cuánto lo/la conocés de verdad.`,
+    title:       `${title} — ¿Cuánto me conocés?`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type:      'website',
+    },
+    twitter: {
+      card:        'summary_large_image',
+      title,
+      description,
+    },
   };
 }
 
