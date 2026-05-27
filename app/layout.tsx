@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Inter, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Providers from '@/components/Providers';
+import ContactButton from '@/components/ContactButton';
 import { SITE_URL } from '@/lib/config';
 import './globals.css';
 
@@ -51,6 +52,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col antialiased">
         <Providers>{children}</Providers>
+        <ContactButton />
         <Analytics />
         <SpeedInsights />
       </body>
