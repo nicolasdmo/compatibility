@@ -19,15 +19,20 @@ type ChallengeRow = {
  */
 export default async function OgImage({ params }: { params: Promise<{ shortcode: string }> }) {
   const { shortcode } = await params;
-  const db = getSupabaseAdmin();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (db as any)
-    .from('challenges')
-    .select('creator_name, archetype')
-    .eq('shortcode', shortcode.toUpperCase())
-    .single();
 
-  const challenge = data as ChallengeRow | null;
+  let challenge: ChallengeRow | null = null;
+  try {
+    const db = getSupabaseAdmin();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (db as any)
+      .from('challenges')
+      .select('creator_name, archetype')
+      .eq('shortcode', shortcode.toUpperCase())
+      .single();
+    challenge = data as ChallengeRow | null;
+  } catch {
+    // Supabase unavailable — render with fallback values
+  }
   const name      = challenge?.creator_name ?? 'alguien';
   const firstName = name.split(' ')[0];
   const archetype = challenge ? ARCHETYPES[challenge.archetype as ArchetypeKey] : null;
