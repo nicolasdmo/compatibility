@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
 import type { ArchetypeKey } from '@/data/questions';
 import { SITE_URL } from '@/lib/config';
-import CopyButton from '@/components/CopyButton';
+import ShareButtons from '@/components/ShareButtons';
 import GradientOrbs from '@/components/GradientOrbs';
 
 type Props = {
@@ -135,16 +135,18 @@ export default async function DashboardPage({ params }: Props) {
             />
             <p className="eyebrow mb-2 relative">📲 Compartí tu reto</p>
             <p className="text-white/60 text-sm mb-5 leading-relaxed relative">
-              Mandá este link por WhatsApp, Insta o donde quieras.
+              Mandalo por donde quieras. El mensaje ya va con tu nombre y el reto.
               Vemos quién te conoce de verdad.
             </p>
             <div
-              className="rounded-xl px-4 py-3.5 font-mono text-xs text-white break-all select-all mb-3 relative"
+              className="rounded-xl px-4 py-3.5 font-mono text-xs text-white break-all select-all mb-4 relative"
               style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               {shareLink}
             </div>
-            <CopyButton text={shareLink} />
+            <div className="relative">
+              <ShareButtons creatorName={challenge.creator_name} shareLink={shareLink} />
+            </div>
           </div>
 
           {/* STATS */}
@@ -249,7 +251,7 @@ export default async function DashboardPage({ params }: Props) {
             <p className="text-white/55 text-sm mb-5">
               Mandalo a tres personas más. Te van a sorprender.
             </p>
-            <CopyButton text={shareLink} />
+            <ShareButtons creatorName={challenge.creator_name} shareLink={shareLink} compact />
           </div>
         </div>
 
