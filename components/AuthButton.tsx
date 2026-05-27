@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { useState } from 'react';
+import { useSession, signIn } from 'next-auth/react';
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
@@ -14,12 +13,9 @@ const GoogleIcon = () => (
 );
 
 type Props = {
-  /** Where to send the user after they finish OAuth. Defaults to current page. */
   redirectTo?: string;
-  /** Visual variant. */
-  variant?: 'primary' | 'secondary';
-  /** Text on the button. */
-  label?: string;
+  variant?:   'primary' | 'secondary';
+  label?:     string;
 };
 
 export default function GoogleSignInButton({
@@ -29,21 +25,11 @@ export default function GoogleSignInButton({
 }: Props) {
   const [loading, setLoading] = useState(false);
 
-  const handleSignIn = async () => {
+  const handleSignIn = () => {
     setLoading(true);
-    const supabase = createClient();
-    const next     = redirectTo ?? (typeof window !== 'undefined' ? window.location.pathname : '/crear');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
-    if (error) {
-      console.error('[auth] google sign-in error:', error.message);
-      setLoading(false);
-    }
-    // On success, Supabase redirects away — no need to clear loading
+    const callbackUrl = redirectTo ?? (typeof window !== 'undefined' ? window.location.pathname : '/crear');
+    signIn('google', { callbackUrl });
+    // Browser navigates away — no need to reset loading
   };
 
   const baseClass = variant === 'primary' ? 'btn-primary' : 'btn-secondary';
@@ -65,22 +51,11 @@ export default function GoogleSignInButton({
   );
 }
 
-/** Hook used by other client components that need the current user. */
+/** Hook: current NextAuth session user. Drop-in replacement for the old useUser. */
 export function useUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  return { user, loading };
+  const { data: session, status } = useSession();
+  return {
+    user:    status === 'authenticated' ? session.user : null,
+    loading: status === 'loading',
+  };
 }

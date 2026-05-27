@@ -12,7 +12,7 @@ import {
   compatVerdict,
 } from '@/lib/compatibility';
 import type { Answers } from '@/lib/scoring';
-import CompatPreview from '@/components/CompatPreview';
+import MatchAuthGate from '@/components/MatchAuthGate';
 import GradientOrbs from '@/components/GradientOrbs';
 import ShareButtons from '@/components/ShareButtons';
 
@@ -189,43 +189,17 @@ export default async function MatchPage({ params }: Props) {
             <p className="text-white/60 text-base">{verdict.sub}</p>
           </div>
 
-          {/* ── Compatibility CTA (the money-maker) ──────────────────────── */}
-          {purchase ? (
-            // Already bought — link to the unlocked report
-            <div className="card-glass w-full p-5 mb-8 text-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(6,255,165,0.10), rgba(58,134,255,0.10))',
-                borderColor: 'rgba(6,255,165,0.3)',
-              }}
-            >
-              <span className="badge-live mb-3 inline-flex">DESBLOQUEADO</span>
-              <h3 className="font-display text-2xl text-white mb-2">
-                Ya tenés tu reporte
-              </h3>
-              <p className="text-white/65 text-sm mb-4">
-                Compatibilidad real con {challenge.creator_name} lista para ver.
-              </p>
-              <Link
-                href={`/compat/${attemptId}?token=${purchase.access_token}`}
-                className="btn-lime w-full"
-              >
-                <span>Ver mi reporte completo</span>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </Link>
-            </div>
-          ) : (
-            // Not bought yet — show locked preview
-            <CompatPreview
-              attemptId={attemptId}
-              creatorName={challenge.creator_name}
-              guesserName={attempt.guesser_name}
-              overallScore={overall}
-              dimensions={dimensions}
-              verdictColor={compatVerd.color}
-            />
-          )}
+          {/* ── Compatibility CTA (gated behind Google login) ─────────────── */}
+          <MatchAuthGate
+            attemptId={attemptId}
+            creatorName={challenge.creator_name}
+            guesserName={attempt.guesser_name}
+            overallScore={overall}
+            dimensions={dimensions}
+            verdictColor={compatVerd.color}
+            purchase={purchase}
+            perceivedArchetype={attempt.perceived_archetype}
+          />
 
           {/* Archetype comparison */}
           {ownerArchetype && guessedArchetype && (

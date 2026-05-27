@@ -2,44 +2,38 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import TestRunner from '@/components/TestRunner';
 import GradientOrbs from '@/components/GradientOrbs';
 import GoogleSignInButton from '@/components/AuthButton';
-import { createClient } from '@/lib/supabase/client';
 import type { Answers } from '@/lib/scoring';
-import type { User } from '@supabase/supabase-js';
 
 type Step = 'auth' | 'name' | 'test' | 'submitting';
 
 export default function CrearFlow() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+
   const [step,  setStep]  = useState<Step>('auth');
-  const [user,  setUser]  = useState<User | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
   const [name,  setName]  = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
-  // Check existing session on mount — if already logged in, skip auth step
+  // Once session resolves: if authenticated skip auth step and pre-fill name/email
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUser(data.user);
-        const displayName = data.user.user_metadata?.full_name?.split(' ')[0]
-                        ?? data.user.user_metadata?.name?.split(' ')[0]
-                        ?? '';
-        if (displayName) setName(displayName);
-        if (data.user.email) setEmail(data.user.email);
-        setStep('name');
-      }
-      setAuthChecked(true);
-    });
-  }, []);
+    if (status === 'loading') return;
+    if (status === 'authenticated' && session?.user) {
+      const firstName = session.user.name?.split(' ')[0] ?? '';
+      if (firstName) setName(firstName);
+      if (session.user.email) setEmail(session.user.email);
+      setStep('name');
+    } else if (status === 'unauthenticated' && step === 'auth') {
+      // Stay on auth step — nothing to pre-fill
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
-  const handleSkipAuth = () => {
-    setStep('name');
-  };
+  const handleSkipAuth = () => setStep('name');
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +45,11 @@ export default function CrearFlow() {
     setStep('submitting');
     try {
       const res = await fetch('/api/challenge', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body:    JSON.stringify({
           name:  name.trim(),
-          email: email.trim() || null,
+          email: session?.user?.email ?? email.trim() || null,
           answers,
           questionIds,
         }),
@@ -107,7 +101,7 @@ export default function CrearFlow() {
 
   /* ── Auth step (default) ─────────────────────────────────── */
   if (step === 'auth') {
-    if (!authChecked) {
+    if (status === 'loading') {
       return (
         <>
           <GradientOrbs />
@@ -134,7 +128,7 @@ export default function CrearFlow() {
               </h1>
               <p className="text-white/55 text-base">
                 Guardá tu reto en tu cuenta para no perderlo.<br />
-                O segui anónimo si preferís.
+                O seguí anónimo si preferís.
               </p>
             </div>
 
@@ -166,6 +160,9 @@ export default function CrearFlow() {
   }
 
   /* ── Name step ───────────────────────────────────────────── */
+  const isAuthenticated = status === 'authenticated';
+  const firstName = session?.user?.name?.split(' ')[0] ?? '';
+
   return (
     <>
       <GradientOrbs />
@@ -174,7 +171,9 @@ export default function CrearFlow() {
 
           <div className="text-center mb-8">
             <div className="badge-live mb-6 inline-flex">
-              {user ? `HOLA ${(user.user_metadata?.full_name?.split(' ')[0] ?? '').toUpperCase()}` : 'CREAR RETO · 2 MIN'}
+              {isAuthenticated
+                ? `HOLA ${firstName.toUpperCase()}`
+                : 'CREAR RETO · 2 MIN'}
             </div>
             <h1 className="font-display text-5xl sm:text-6xl text-white leading-[0.95] mb-4">
               ¿Cómo<br />
@@ -197,7 +196,7 @@ export default function CrearFlow() {
               className="input-modern"
             />
 
-            {!user && (
+            {!isAuthenticated && (
               <input
                 type="email"
                 value={email}
