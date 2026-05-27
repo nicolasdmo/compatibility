@@ -1,5 +1,4 @@
 import { ImageResponse } from 'next/og';
-import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
 import type { ArchetypeKey } from '@/data/questions';
 
@@ -23,16 +22,26 @@ export default async function OgImage({ params }: { params: Promise<{ shortcode:
 
   let challenge: ChallengeRow | null = null;
   try {
-    const db = getSupabaseAdmin();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (db as any)
-      .from('challenges')
-      .select('creator_name, archetype')
-      .eq('shortcode', shortcode.toUpperCase())
-      .single();
-    challenge = data as ChallengeRow | null;
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    if (url && key) {
+      const res = await fetch(
+        `${url}/rest/v1/challenges?select=creator_name,archetype&shortcode=eq.${shortcode.toUpperCase()}&limit=1`,
+        {
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+          },
+          cache: 'no-store',
+        }
+      );
+      if (res.ok) {
+        const rows = await res.json() as ChallengeRow[];
+        challenge = rows[0] ?? null;
+      }
+    }
   } catch {
-    // Supabase unavailable — render with fallback values
+    // fetch failed — render with fallback values
   }
   const name      = challenge?.creator_name ?? 'alguien';
   const firstName = name.split(' ')[0];
