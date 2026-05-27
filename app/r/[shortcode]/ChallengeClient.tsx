@@ -6,6 +6,7 @@ import TestRunner from '@/components/TestRunner';
 import GradientOrbs from '@/components/GradientOrbs';
 import type { Question } from '@/data/questions';
 import type { Answers } from '@/lib/scoring';
+import { Analytics } from '@/lib/analytics';
 
 type Step = 'intro' | 'test' | 'submitting';
 
@@ -24,10 +25,12 @@ export default function ChallengeClient({ shortcode, creatorName, questions }: P
   const handleIntroSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!guesserName.trim()) return;
+    Analytics.challengeStarted(shortcode);
     setStep('test');
   };
 
   const handleTestComplete = async (answers: Answers) => {
+    Analytics.challengeCompleted(shortcode, 0, questions.length);
     setStep('submitting');
     try {
       const res = await fetch('/api/attempt', {
