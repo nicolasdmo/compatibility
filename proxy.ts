@@ -40,6 +40,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Match everything except _next, static files, webhooks, and OG images
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhook|opengraph-image).*)',
+    // Uses two negative lookaheads: one for path prefixes, one for opengraph-image anywhere in path
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhook)(?!.*opengraph-image).*)',
   ],
 };
