@@ -27,7 +27,13 @@ export default function ShareButtons({ creatorName, shareLink, compact = false, 
   const [canShare,  setCanShare]  = useState(false);
 
   useEffect(() => {
-    setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+    // Only show native share when it's likely to work well:
+    // - navigator.share exists (any modern browser)
+    // - device has touch (filters out desktop where Chrome's share is half-broken)
+    if (typeof navigator === 'undefined') return;
+    if (typeof navigator.share !== 'function') return;
+    const isTouch = 'ontouchstart' in window || (navigator.maxTouchPoints ?? 0) > 0;
+    setCanShare(isTouch);
   }, []);
 
   // ── Personalised copy ───────────────────────────────────────────
