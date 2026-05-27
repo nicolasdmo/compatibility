@@ -7,13 +7,22 @@ interface Props {
   shareLink:   string;
   /** Compact variant — hides the copy block above, only shows buttons. */
   compact?: boolean;
+  /**
+   * If provided, switches the messaging to a "score brag/challenge" tone —
+   * the sharer is the guesser, not the creator. Score determines tone.
+   */
+  scoreMode?: {
+    score:      number;
+    total:      number;
+    targetName: string; // the person they took the test about
+  };
 }
 
 /**
  * Multi-channel share buttons with personalized copy per platform.
  * Optimised for virality: native share first (mobile), WhatsApp big, rest in a row.
  */
-export default function ShareButtons({ creatorName, shareLink, compact = false }: Props) {
+export default function ShareButtons({ creatorName, shareLink, compact = false, scoreMode }: Props) {
   const [copied,    setCopied]    = useState(false);
   const [canShare,  setCanShare]  = useState(false);
 
@@ -23,15 +32,48 @@ export default function ShareButtons({ creatorName, shareLink, compact = false }
 
   // ── Personalised copy ───────────────────────────────────────────
   const firstName = creatorName.split(' ')[0];
-  const waText = encodeURIComponent(
-    `${firstName}: ¿cuánto me conocés? Adiviná cómo respondí 12 preguntas sobre mí. Te espero 👀\n${shareLink}`
-  );
-  const tgText = encodeURIComponent(
-    `${firstName} te reta: adiviná cómo respondí 12 preguntas sobre mí.`
-  );
-  const xText  = encodeURIComponent(
-    `adiviná cómo respondí 12 preguntas sobre mí. solo el que me conoce de verdad pasa el test ↓`
-  );
+  const targetFirst = scoreMode?.targetName.split(' ')[0] ?? '';
+  const targetIsFemale = targetFirst.endsWith('a');
+
+  let waMsg: string;
+  let tgMsg: string;
+  let xMsg:  string;
+  let nativeTitle: string;
+  let nativeText:  string;
+
+  if (scoreMode) {
+    const { score, total } = scoreMode;
+    const pct = score / total;
+
+    // Tone shifts with score — brag when high, challenge when mid, joke when low
+    const brag =
+      pct >= 0.9 ? `Saqué ${score}/${total} conociendo a ${targetFirst}. Soy el que mejor ${targetIsFemale ? 'la' : 'lo'} conoce. A ver si me superan 🔥` :
+      pct >= 0.7 ? `Saqué ${score}/${total} conociendo a ${targetFirst}. ¿Cuánto sacás vos? 👀` :
+      pct >= 0.5 ? `Saqué ${score}/${total} en el test de ${targetFirst}. Hay que mejorar. Probá vos:` :
+      pct >= 0.3 ? `Saqué ${score}/${total} conociendo a ${targetFirst} 😅 a ver si lo hacés mejor que yo` :
+                   `Saqué ${score}/${total} conociendo a ${targetFirst}. Soy un papelón. Probá si podés peor 💀`;
+
+    waMsg = `${brag}\n${shareLink}`;
+    tgMsg = brag;
+    xMsg  = pct >= 0.7
+      ? `saqué ${score}/${total} conociendo a ${targetFirst}. ¿podés superarme? ↓`
+      : `saqué ${score}/${total} conociendo a ${targetFirst} 😅 a ver si lo hacés mejor ↓`;
+    nativeTitle = `Saqué ${score}/${total} en el test de ${targetFirst}`;
+    nativeText  = pct >= 0.7
+      ? `¿Cuánto sacás vos conociendo a ${targetFirst}?`
+      : `Probá vos a ver si lo hacés mejor 👀`;
+  } else {
+    // Default — creator sharing their own challenge
+    waMsg = `${firstName}: ¿cuánto me conocés? Adiviná cómo respondí 12 preguntas sobre mí. Te espero 👀\n${shareLink}`;
+    tgMsg = `${firstName} te reta: adiviná cómo respondí 12 preguntas sobre mí.`;
+    xMsg  = `adiviná cómo respondí 12 preguntas sobre mí. solo el que me conoce de verdad pasa el test ↓`;
+    nativeTitle = `¿Cuánto conocés a ${firstName}?`;
+    nativeText  = `Adiviná cómo respondió 12 preguntas sobre sí mism${firstName.endsWith('a') ? 'a' : 'o'} 👀`;
+  }
+
+  const waText = encodeURIComponent(waMsg);
+  const tgText = encodeURIComponent(tgMsg);
+  const xText  = encodeURIComponent(xMsg);
 
   const waUrl = `https://wa.me/?text=${waText}`;
   const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${tgText}`;
@@ -41,8 +83,8 @@ export default function ShareButtons({ creatorName, shareLink, compact = false }
   const handleNativeShare = async () => {
     try {
       await navigator.share({
-        title: `¿Cuánto conocés a ${firstName}?`,
-        text:  `Adiviná cómo respondió 12 preguntas sobre sí mism${firstName.endsWith('a') ? 'a' : 'o'} 👀`,
+        title: nativeTitle,
+        text:  nativeText,
         url:   shareLink,
       });
     } catch {

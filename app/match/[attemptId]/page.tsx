@@ -14,6 +14,7 @@ import {
 import type { Answers } from '@/lib/scoring';
 import CompatPreview from '@/components/CompatPreview';
 import GradientOrbs from '@/components/GradientOrbs';
+import ShareButtons from '@/components/ShareButtons';
 
 type Props = {
   params: Promise<{ attemptId: string }>;
@@ -286,6 +287,33 @@ export default async function MatchPage({ params }: Props) {
               </div>
             </div>
           )}
+
+          {/* SHARE SCORE — viral loop: the guesser dares others to beat their score */}
+          <div className="card-glass w-full p-6 mb-8 relative overflow-hidden">
+            <div
+              className="absolute -top-20 -right-20 w-48 h-48 rounded-full opacity-30 blur-3xl"
+              style={{ background: verdict.color }}
+            />
+            <p className="eyebrow mb-2 relative">🔥 Retá a otros</p>
+            <p className="text-white/60 text-sm mb-5 leading-relaxed relative">
+              {scorePct >= 0.7
+                ? `Mostrales tu ${attempt.score}/${total}. A ver si alguien lo supera.`
+                : scorePct >= 0.4
+                ? `Mandales el reto. Apuesto a que sacan menos que vos.`
+                : `Compartilo para reírse juntos. Capaz alguien saca peor.`}
+            </p>
+            <div className="relative">
+              <ShareButtons
+                creatorName={attempt.guesser_name}
+                shareLink={challengeUrl}
+                scoreMode={{
+                  score:      attempt.score,
+                  total,
+                  targetName: challenge.creator_name,
+                }}
+              />
+            </div>
+          </div>
 
           {/* Secondary CTAs */}
           <div className="w-full flex flex-col gap-3">
