@@ -13,6 +13,7 @@ import {
 import { getCompatInsights } from '@/lib/compatibilityContent';
 import type { Answers } from '@/lib/scoring';
 import GradientOrbs from '@/components/GradientOrbs';
+import TrackEvent from '@/components/TrackEvent';
 
 type Props = {
   params:       Promise<{ attemptId: string }>;
@@ -108,6 +109,7 @@ export default async function CompatReportPage({ params, searchParams }: Props) 
   return (
     <>
       <GradientOrbs />
+      <TrackEvent name="purchase" params={{ attempt_id: attemptId }} />
 
       <main className="relative z-10 flex flex-col min-h-screen">
 

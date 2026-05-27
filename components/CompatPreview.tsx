@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { track } from '@vercel/analytics';
+import { Analytics } from '@/lib/analytics';
 import type { DimensionScore } from '@/lib/compatibility';
 import { COMPAT_PRICE_DISPLAY } from '@/lib/config';
 
@@ -28,6 +29,7 @@ export default function CompatPreview({
     setLoading(true);
     setError(null);
     track('compat_checkout_started', { attemptId });
+    Analytics.checkoutStarted(attemptId);
     try {
       const res  = await fetch('/api/checkout-compat', {
         method:  'POST',
