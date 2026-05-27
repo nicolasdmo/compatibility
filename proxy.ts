@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match everything except _next, image optimization, static files, and webhooks
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhook).*)',
+    // Match everything except _next, static files, webhooks, and OG images
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhook|opengraph-image).*)',
   ],
 };
