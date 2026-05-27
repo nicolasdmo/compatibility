@@ -35,11 +35,13 @@ export const metadata: Metadata = {
     title: '¿Cuánto me conocés?',
     description: 'Tu pareja, tu mejor amigo, tu vieja. Vemos quién te conoce de verdad — y a quién le duele fallar.',
     type: 'website',
+    images: [{ url: '/og-image.png', width: 1080, height: 1080 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: '¿Cuánto me conocés?',
     description: 'Tu pareja, tu mejor amigo, tu vieja. Vemos quién te conoce de verdad — y a quién le duele fallar.',
+    images: ['/og-image.png'],
   },
 };
 
