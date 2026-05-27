@@ -8,12 +8,21 @@ import { NextResponse, type NextRequest } from 'next/server';
  * Renamed from `middleware.ts` per Next.js 16 file convention (proxy.ts).
  */
 export async function proxy(request: NextRequest) {
+  // Skip auth refresh for OG image routes — they never need a session
+  if (request.nextUrl.pathname.includes('opengraph-image')) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // Skip if env vars are missing (e.g. in CI or edge cases)
+    if (!url || !key) return response;
+
+    const supabase = createServerClient(url, key, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -28,19 +37,20 @@ export async function proxy(request: NextRequest) {
           );
         },
       },
-    }
-  );
+    });
 
-  // Touching `getUser` triggers the cookie refresh if needed.
-  await supabase.auth.getUser();
+    // Touching `getUser` triggers the cookie refresh if needed.
+    await supabase.auth.getUser();
+  } catch {
+    // If Supabase is unavailable, continue without session refresh
+  }
 
   return response;
 }
 
 export const config = {
   matcher: [
-    // Match everything except _next, static files, webhooks, and OG images
-    // Uses two negative lookaheads: one for path prefixes, one for opengraph-image anywhere in path
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhook)(?!.*opengraph-image).*)',
+    // Match everything except _next, static files, and webhooks
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhook).*)',
   ],
 };
