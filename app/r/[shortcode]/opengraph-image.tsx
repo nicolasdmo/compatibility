@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
 import type { ArchetypeKey } from '@/data/questions';
 
+export const runtime     = 'nodejs';
 export const size        = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 export const alt         = '¿Cuánto me conocés?';
