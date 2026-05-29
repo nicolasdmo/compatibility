@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth';
 import { computeArchetypeScores, computeArchetypeKey, type Answers } from '@/lib/scoring';
 import { resolveQuestions } from '@/lib/adaptive';
 
@@ -29,14 +29,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'questionIds es requerido' }, { status: 400 });
     }
 
-    // Optional: attach the challenge to the signed-in user (Google OAuth flow)
-    let userId: string | null = null;
+    // Link the challenge to the signed-in user by email (trusted, server-side).
+    // Falls back to the optional email from the request body for anonymous creators.
+    let creatorEmail: string | null = null;
     try {
-      const ssr = await createClient();
-      const { data: { user } } = await ssr.auth.getUser();
-      userId = user?.id ?? null;
+      const session = await auth();
+      creatorEmail = session?.user?.email ?? null;
     } catch {
-      // anonymous flow — userId stays null
+      // anonymous flow — creatorEmail stays null
+    }
+    if (!creatorEmail && typeof email === 'string' && email.trim()) {
+      creatorEmail = email.trim();
     }
 
     const questions = resolveQuestions(questionIds as string[]);
@@ -53,11 +56,10 @@ export async function POST(req: NextRequest) {
         shortcode,
         owner_code:    ownerCode,
         creator_name:  name.trim(),
-        creator_email: email?.trim() || null,
+        creator_email: creatorEmail,
         answers,
         question_ids:  questionIds,
         archetype,
-        user_id:       userId,
       });
 
       if (!error) {

@@ -57,6 +57,7 @@ export async function processApprovedPayment(paymentId: string): Promise<Payment
     .from('purchases')
     .select('access_token')
     .eq('payment_id', paymentId)
+    .eq('product_type', 'compatibility_report')
     .maybeSingle();
 
   if (existing) {

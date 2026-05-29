@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth';
 import SignOutButton from '@/components/SignOutButton';
 
 /**
@@ -11,9 +11,8 @@ import SignOutButton from '@/components/SignOutButton';
 export default async function Nav() {
   let user = null;
   try {
-    const ssr = await createClient();
-    const { data } = await ssr.auth.getUser();
-    user = data.user;
+    const session = await auth();
+    user = session?.user ?? null;
   } catch {
     // anonymous browsing
   }

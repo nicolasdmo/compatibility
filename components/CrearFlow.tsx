@@ -49,7 +49,7 @@ export default function CrearFlow() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           name:  name.trim(),
-          email: session?.user?.email ?? email.trim() || null,
+          email: (session?.user?.email ?? email.trim()) || null,
           answers,
           questionIds,
         }),

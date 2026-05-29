@@ -2,7 +2,7 @@
 
 /** Canonical public URL of the site (used for OG tags, sitemap, checkout). */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL ?? 'https://compatibility-seven.vercel.app';
+  process.env.NEXT_PUBLIC_BASE_URL || 'https://compatibility-seven.vercel.app';
 
 /** Brand name shown across the UI. */
 export const BRAND_NAME = '¿Cuánto me conocés?';

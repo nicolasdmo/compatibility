@@ -4,20 +4,14 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import CompatPreview from '@/components/CompatPreview';
-
-type Dimension = {
-  category: string;
-  label:    string;
-  emoji:    string;
-  score:    number;
-};
+import type { DimensionScore } from '@/lib/compatibility';
 
 type Props = {
   attemptId:          string;
   creatorName:        string;
   guesserName:        string;
   overallScore:       number;
-  dimensions:         Dimension[];
+  dimensions:         DimensionScore[];
   verdictColor:       string;
   purchase:           { access_token: string } | null;
   perceivedArchetype: string;

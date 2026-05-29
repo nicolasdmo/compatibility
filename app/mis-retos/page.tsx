@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { ARCHETYPES } from '@/data/archetypes';
 import type { ArchetypeKey } from '@/data/questions';
@@ -30,9 +30,10 @@ function formatDate(dateStr: string): string {
 }
 
 export default async function MisRetosPage() {
-  const ssr = await createClient();
-  const { data: { user } } = await ssr.auth.getUser();
-  if (!user) redirect('/crear');
+  const session = await auth();
+  const user = session?.user;
+  if (!user?.email) redirect('/crear');
+  const email = user.email;
 
   const db = getSupabaseAdmin();
 
@@ -41,7 +42,7 @@ export default async function MisRetosPage() {
   const { data: rawChallenges } = await (db as any)
     .from('challenges')
     .select('id, owner_code, shortcode, creator_name, archetype, created_at')
-    .eq('user_id', user.id)
+    .eq('creator_email', email)
     .order('created_at', { ascending: false });
 
   const challenges = (rawChallenges as ChallengeRow[] | null) ?? [];
@@ -63,10 +64,7 @@ export default async function MisRetosPage() {
     counts.set(a.challenge_id, cur);
   }
 
-  const displayName = user.user_metadata?.full_name?.split(' ')[0]
-                    ?? user.user_metadata?.name?.split(' ')[0]
-                    ?? user.email?.split('@')[0]
-                    ?? '';
+  const displayName = user.name?.split(' ')[0] ?? email.split('@')[0];
 
   return (
     <>
